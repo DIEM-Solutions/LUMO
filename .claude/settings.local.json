@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(vercel *)",
+      "PowerShell(npx vercel whoami)",
+      "PowerShell(npx vercel project ls --scope diem4)",
+      "PowerShell(npx vercel project inspect diem-portal-app --scope diem4)",
+      "PowerShell(npx vercel ls diem-portal-app --scope diem4)",
+      "PowerShell(npx vercel inspect https://diem-portal-8ndofyd1o-diem4.vercel.app --scope diem4)",
+      "PowerShell(npx vercel project inspect diem-portal-live --scope diem4)",
+      "PowerShell(npx vercel domains ls --scope diem4)",
+      "PowerShell(npx vercel inspect https://diem-portal-5n06eba6g-diem4.vercel.app --scope diem4 --logs 2>&1 | Select-Object -Last 60)",
+      "Bash(curl.exe -sS -o /dev/null -w \"GET / -> %{http_code}\\\\n\" https://diem-portal-kfedvw37z-diem4.vercel.app/)",
+      "Bash(curl.exe -sS -o /dev/null -w \"GET /login -> %{http_code}\\\\n\" https://diem-portal-kfedvw37z-diem4.vercel.app/login)",
+      "Bash(curl.exe -sS -o /dev/null -w \"GET /projects -> %{http_code}\\\\n\" https://diem-portal-kfedvw37z-diem4.vercel.app/projects)",
+      "Bash(curl.exe -sS -o /dev/null -w \"GET / -> %{http_code}\\\\n\" https://diem-portal-app.vercel.app/)",
+      "Bash(curl.exe -sS -o /dev/null -w \"GET /login -> %{http_code}\\\\n\" https://diem-portal-app.vercel.app/login)",
+      "Bash(curl.exe -sS -D - -o /dev/null https://diem-portal-app.vercel.app/)",
+      "Bash(curl.exe -sS -D - -o /dev/null https://diem-portal-app.vercel.app/login)",
+      "Bash(curl.exe *)"
+    ]
+  }
+}
