@@ -74,7 +74,7 @@ export default function LoginPage() {
         {message && <div className="form-error">{message}</div>}
 
         <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", justifyContent: "center" }}>
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? "Please wait..." : "Sign in"}
         </button>
       </form>
     </div>
