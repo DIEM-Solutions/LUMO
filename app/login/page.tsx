@@ -1,11 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
-  const router = useRouter();
   const supabase = createClient();
 
   const [email, setEmail] = useState("");
@@ -29,8 +27,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/home");
-    router.refresh();
+    // Full navigation so the session cookie is on the next document request.
+    window.location.assign("/home");
   }
 
   return (

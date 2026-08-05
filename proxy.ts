@@ -3,6 +3,13 @@ import { createServerClient } from "@supabase/ssr";
 
 const PUBLIC_PATHS = ["/login"];
 
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie.name, cookie.value);
+  });
+  return to;
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -40,16 +47,13 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
 
+  // Only gate unauthenticated access. Do NOT bounce authenticated users off
+  // /login — portal layout owns "has people profile" and must be able to show
+  // an error / sign-out instead of looping /login ↔ /home.
   if (!user && !isPublicPath) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
-    return NextResponse.redirect(loginUrl);
-  }
-
-  if (user && isPublicPath) {
-    const homeUrl = request.nextUrl.clone();
-    homeUrl.pathname = "/home";
-    return NextResponse.redirect(homeUrl);
+    return copyCookies(response, NextResponse.redirect(loginUrl));
   }
 
   return response;

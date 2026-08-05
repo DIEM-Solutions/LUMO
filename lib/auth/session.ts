@@ -15,7 +15,14 @@ export async function getCurrentPerson(): Promise<Person | null> {
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
-  return data as Person | null;
+  if (data) return data as Person;
+
+  // Auth user exists but people.auth_user_id was never set (trigger missing,
+  // case-mismatched email, or account created before migrations). Try to link.
+  const { data: linked, error } = await supabase.rpc("ensure_person_for_auth_user");
+  if (error || !linked) return null;
+
+  return linked as Person;
 }
 
 export type EffectivePermissions = Required<Permissions> & { isAdmin: boolean };
