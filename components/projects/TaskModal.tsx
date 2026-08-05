@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
@@ -39,23 +39,45 @@ export function TaskModal({
   const router = useRouter();
   const toast = useToast();
 
-  const [name, setName] = useState(task?.name ?? "");
-  const [projectId, setProjectId] = useState(task?.project_id ?? presetProjectId ?? projects[0]?.id ?? "");
-  const [assigneeId, setAssigneeId] = useState(task?.assignee_id ?? presetPersonId ?? people[0]?.id ?? "");
-  const [assignee2Id, setAssignee2Id] = useState(task?.assignee2_id ?? "");
-  const [status, setStatus] = useState<TaskStatus>(forceStatus ?? task?.status ?? "not-started");
-  const [priority, setPriority] = useState<Priority>(task?.priority ?? "medium");
-  const [dueDate, setDueDate] = useState(task?.due_date ?? toISO(addDays(today(), 7)));
-  const [weight, setWeight] = useState(task?.weight ?? 10);
-  const [startDate, setStartDate] = useState(task?.start_date ?? toISO(today()));
-  const [workloadDays, setWorkloadDays] = useState(task?.workload_days ?? 1);
-  const [includeWeekends, setIncludeWeekends] = useState(task?.include_weekends ?? false);
-  const [blockerReason, setBlockerReason] = useState(task?.blocker_reason ?? "");
-  const [approvalPersonId, setApprovalPersonId] = useState(task?.approval_person_id ?? "");
-  const [dependency, setDependency] = useState(task?.dependency ?? "");
-  const [notes, setNotes] = useState(task?.notes ?? "");
+  const [name, setName] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [assigneeId, setAssigneeId] = useState("");
+  const [assignee2Id, setAssignee2Id] = useState("");
+  const [status, setStatus] = useState<TaskStatus>("not-started");
+  const [priority, setPriority] = useState<Priority>("medium");
+  const [dueDate, setDueDate] = useState("");
+  const [weight, setWeight] = useState(10);
+  const [startDate, setStartDate] = useState("");
+  const [workloadDays, setWorkloadDays] = useState(1);
+  const [includeWeekends, setIncludeWeekends] = useState(false);
+  const [blockerReason, setBlockerReason] = useState("");
+  const [approvalPersonId, setApprovalPersonId] = useState("");
+  const [dependency, setDependency] = useState("");
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Form state is only initialized on mount; re-sync whenever the modal opens
+  // so edit/create always shows the current task (or empty defaults).
+  useEffect(() => {
+    if (!open) return;
+    setName(task?.name ?? "");
+    setProjectId(task?.project_id ?? presetProjectId ?? projects[0]?.id ?? "");
+    setAssigneeId(task?.assignee_id ?? presetPersonId ?? people[0]?.id ?? "");
+    setAssignee2Id(task?.assignee2_id ?? "");
+    setStatus(forceStatus ?? task?.status ?? "not-started");
+    setPriority(task?.priority ?? "medium");
+    setDueDate(task?.due_date ?? toISO(addDays(today(), 7)));
+    setWeight(task?.weight ?? 10);
+    setStartDate(task?.start_date ?? toISO(today()));
+    setWorkloadDays(task?.workload_days ?? 1);
+    setIncludeWeekends(task?.include_weekends ?? false);
+    setBlockerReason(task?.blocker_reason ?? "");
+    setApprovalPersonId(task?.approval_person_id ?? "");
+    setDependency(task?.dependency ?? "");
+    setNotes(task?.notes ?? "");
+    setError("");
+  }, [open, task, presetProjectId, presetPersonId, forceStatus, projects, people]);
 
   async function handleSave() {
     if (!name.trim()) {

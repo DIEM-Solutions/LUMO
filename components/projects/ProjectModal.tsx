@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
@@ -24,15 +24,30 @@ export function ProjectModal({
   const toast = useToast();
   const eligibleOwners = people.filter((p) => p.role_type !== "ceo");
 
-  const [name, setName] = useState(project?.name ?? "");
-  const [type, setType] = useState<"client" | "internal">(project?.type ?? "client");
-  const [clientOrCategory, setClientOrCategory] = useState(project ? project.client ?? project.category ?? "" : "");
-  const [startDate, setStartDate] = useState(project?.start_date ?? toISO(today()));
-  const [endDate, setEndDate] = useState(project?.end_date ?? toISO(addDays(today(), 60)));
-  const [ownerId, setOwnerId] = useState(project?.owner_id ?? eligibleOwners[0]?.id ?? "");
-  const [teamIds, setTeamIds] = useState<string[]>(project?.team_ids ?? []);
+  const [name, setName] = useState("");
+  const [type, setType] = useState<"client" | "internal">("client");
+  const [clientOrCategory, setClientOrCategory] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [ownerId, setOwnerId] = useState("");
+  const [teamIds, setTeamIds] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Form state is only initialized on mount; re-sync whenever the modal opens
+  // so edit always shows the current project (or empty defaults for create).
+  useEffect(() => {
+    if (!open) return;
+    const owners = people.filter((p) => p.role_type !== "ceo");
+    setName(project?.name ?? "");
+    setType(project?.type ?? "client");
+    setClientOrCategory(project ? project.client ?? project.category ?? "" : "");
+    setStartDate(project?.start_date ?? toISO(today()));
+    setEndDate(project?.end_date ?? toISO(addDays(today(), 60)));
+    setOwnerId(project?.owner_id ?? owners[0]?.id ?? "");
+    setTeamIds(project?.team_ids ?? []);
+    setError("");
+  }, [open, project, people]);
 
   function toggleTeam(id: string) {
     setTeamIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
