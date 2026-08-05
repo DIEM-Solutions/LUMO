@@ -17,7 +17,7 @@ as $$
 begin
   update people
   set auth_user_id = new.id
-  where email = new.email
+  where lower(email) = lower(new.email)
     and auth_user_id is null;
 
   if not found then
