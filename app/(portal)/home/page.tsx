@@ -1,0 +1,26 @@
+import { redirect } from "next/navigation";
+import { Topbar } from "@/components/shell/Topbar";
+import { ExecutiveHome } from "@/components/home/ExecutiveHome";
+import { EmployeeHome } from "@/components/home/EmployeeHome";
+import { getCurrentPerson } from "@/lib/auth/session";
+import { createStore } from "@/lib/domain/store";
+import { loadPortalData } from "@/lib/data/portal";
+
+export default async function HomePage() {
+  const person = await getCurrentPerson();
+  if (!person) redirect("/login");
+
+  const data = await loadPortalData();
+  const store = createStore(data);
+  const isExec = person.role_type === "ceo" || person.role_type === "admin";
+  const ceoId = data.people.find((p) => p.role_type === "ceo")?.id ?? null;
+
+  return (
+    <>
+      <Topbar eyebrow="DIEM Portal" title={isExec ? "Home" : "My Workspace"} />
+      <main className="content">
+        {isExec ? <ExecutiveHome store={store} ceoId={ceoId} /> : <EmployeeHome store={store} personId={person.id} />}
+      </main>
+    </>
+  );
+}

@@ -1,0 +1,21 @@
+import { redirect } from "next/navigation";
+import { Topbar } from "@/components/shell/Topbar";
+import { TeamClient } from "@/components/team/TeamClient";
+import { getCurrentPerson } from "@/lib/auth/session";
+import { loadPortalData } from "@/lib/data/portal";
+
+export default async function TeamPage() {
+  const person = await getCurrentPerson();
+  if (!person) redirect("/login");
+
+  const data = await loadPortalData();
+
+  return (
+    <>
+      <Topbar eyebrow="DIEM Portal" title="Team" />
+      <main className="content">
+        <TeamClient data={data} />
+      </main>
+    </>
+  );
+}

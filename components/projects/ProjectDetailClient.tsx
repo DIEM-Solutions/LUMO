@@ -1,0 +1,192 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { computeHealth } from "@/lib/domain/health";
+import { projectProgress } from "@/lib/domain/progress";
+import { computeStage } from "@/lib/domain/stage";
+import { createStore, type PortalData } from "@/lib/domain/store";
+import { fmt, fromISO } from "@/lib/domain/dates";
+import {
+  Avatar,
+  Card,
+  HealthFlag,
+  PeopleChips,
+  PriorityTag,
+  RunwayBar,
+  StagePill,
+  TaskStatusPill,
+  TypeTag,
+  UrgencyDot,
+} from "@/components/ui/primitives";
+import { ProjectModal } from "./ProjectModal";
+import { TaskModal } from "./TaskModal";
+import type { Task } from "@/lib/types";
+
+export function ProjectDetailClient({
+  data,
+  projectId,
+  canEdit,
+}: {
+  data: PortalData;
+  projectId: string;
+  canEdit: boolean;
+}) {
+  const store = useMemo(() => createStore(data), [data]);
+  const project = store.projectById(projectId)!;
+  const tasks = store.tasksFor(projectId);
+  const blockers = data.blockers.filter((b) => b.project_id === projectId);
+  const team = (project.team_ids ?? []).map((id) => store.personById(id)).filter(Boolean);
+  const owner = store.personById(project.owner_id);
+
+  const stage = computeStage(project, tasks);
+  const health = computeHealth(project, tasks, data.blockers);
+  const pct = projectProgress(project, tasks);
+
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  return (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <Link href="/projects" className="linklike">← Back to Projects & Tasks</Link>
+      </div>
+
+      <Card>
+        <div className="pc-top">
+          <div className="tags">
+            <TypeTag type={project.type} />
+            <PriorityTag priority={project.priority} />
+          </div>
+          {canEdit && (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setProjectModalOpen(true)}>
+              Edit project
+            </button>
+          )}
+        </div>
+        <h2 style={{ marginTop: 11 }}>{project.name}</h2>
+        <div className="pc-sub">{owner?.name ?? ""} · Owner{project.client ? ` · ${project.client}` : project.category ? ` · ${project.category}` : ""}</div>
+        <div className="pc-row2" style={{ marginTop: 12 }}>
+          <StagePill stage={stage} />
+          <HealthFlag health={health} />
+        </div>
+        <div className="pc-people" style={{ marginTop: 12 }}>
+          <PeopleChips people={team} />
+        </div>
+        <div className="runway">
+          <div className="runway-labels">
+            <span>Progress</span>
+            <span className="pct">{pct}%</span>
+          </div>
+          <RunwayBar pct={pct} stage={stage} />
+        </div>
+        <div className="pc-meta">
+          <span>
+            {project.start_date ? fmt(fromISO(project.start_date)) : "—"} → {project.end_date ? fmt(fromISO(project.end_date)) : "—"}
+          </span>
+        </div>
+        {project.next_deliverable && (
+          <div className="pc-stat-row">
+            <span className="pc-stat">🎯 Next: {project.next_deliverable}</span>
+          </div>
+        )}
+      </Card>
+
+      <div className="section-block" style={{ marginTop: 24 }}>
+        <div className="panel-head-row">
+          <h2 style={{ fontSize: 16 }}>Tasks ({tasks.length})</h2>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              setEditingTask(null);
+              setTaskModalOpen(true);
+            }}
+          >
+            + Add task
+          </button>
+        </div>
+        {tasks.length ? (
+          <div className="stack-gap">
+            {tasks.map((tk) => {
+              const assignee = store.personById(tk.assignee_id);
+              const assignee2 = store.personById(tk.assignee2_id);
+              return (
+                <div
+                  key={tk.id}
+                  className="card"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => {
+                    setEditingTask(tk);
+                    setTaskModalOpen(true);
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{tk.name}</div>
+                      <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
+                        Due {fmt(fromISO(tk.due_date))} · {tk.weight}% weight
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div className="kc-people">
+                        <Avatar person={assignee} size="sm" />
+                        {assignee2 && <Avatar person={assignee2} size="sm" />}
+                      </div>
+                      <TaskStatusPill status={tk.status} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <Card><div className="empty-state">No tasks yet.</div></Card>
+        )}
+      </div>
+
+      {blockers.length > 0 && (
+        <div className="section-block" style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 16, marginBottom: 13 }}>Blockers</h2>
+          {blockers.map((b) => (
+            <div className={`blocker-card urgency-${b.urgency} status-${b.status}`} key={b.id}>
+              <div className="blocker-head">
+                <div>
+                  <div className="blocker-title">{b.title}</div>
+                </div>
+                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700 }}>
+                  <UrgencyDot urgency={b.urgency} /> {b.urgency}
+                </span>
+              </div>
+              <div className="blocker-grid">
+                <div className="blocker-field">
+                  <div className="bf-lbl">Cause</div>
+                  <div className="bf-val">{b.cause || "—"}</div>
+                </div>
+                <div className="blocker-field">
+                  <div className="bf-lbl">Impact</div>
+                  <div className="bf-val">{b.impact || "—"}</div>
+                </div>
+                <div className="blocker-field span2">
+                  <div className="bf-lbl">Action needed</div>
+                  <div className="bf-val">{b.action_needed || "—"}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ProjectModal open={projectModalOpen} onClose={() => setProjectModalOpen(false)} project={project} people={data.people} />
+      <TaskModal
+        open={taskModalOpen}
+        onClose={() => setTaskModalOpen(false)}
+        task={editingTask}
+        people={data.people}
+        projects={data.projects}
+        presetProjectId={projectId}
+      />
+    </>
+  );
+}
