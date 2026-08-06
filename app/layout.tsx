@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
-import { Fraunces, IBM_Plex_Mono, Inter } from "next/font/google";
+import { IBM_Plex_Mono, Montserrat } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const montserrat = Montserrat({
+  variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
-});
-
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
 });
 
 const plexMono = IBM_Plex_Mono({
@@ -33,7 +27,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${fraunces.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${montserrat.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

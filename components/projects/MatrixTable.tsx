@@ -84,9 +84,12 @@ export function MatrixTable({ projects, store }: { projects: Project[]; store: S
                       .filter((tk) => store.isAssignedTo(tk, person.id) && tk.status !== "done").length;
                     return (
                       <td className="matrix-cell" key={p.id}>
-                        <Link href={`/projects/${p.id}`} className={`matrix-chip${isOwner ? " owner" : ""}`}>
+                        <Link
+                          href={`/projects/${p.id}`}
+                          className={`matrix-chip${isOwner ? " owner" : ""}`}
+                          title={`${taskCount} active task${taskCount === 1 ? "" : "s"} on this project`}
+                        >
                           {isOwner ? "Owner" : "Member"}
-                          {taskCount ? ` · ${taskCount}` : ""}
                         </Link>
                       </td>
                     );
@@ -98,7 +101,7 @@ export function MatrixTable({ projects, store }: { projects: Project[]; store: S
         </table>
       </div>
       <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 10 }}>
-        * reported utilization figure, shown as provided rather than recalculated. Bar under each name shows the client / internal split of active tasks.
+        * reported, not recalculated · bar under name = client / internal split of active tasks
       </div>
     </>
   );

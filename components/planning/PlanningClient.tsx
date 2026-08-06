@@ -71,14 +71,15 @@ export function PlanningClient({ data }: { data: PortalData }) {
         />
       )}
 
-      <TaskModal
-        open={taskModalOpen}
-        onClose={() => setTaskModalOpen(false)}
-        task={editingTask}
-        people={data.people}
-        projects={data.projects}
-        presetPersonId={presetPersonId}
-      />
+      {taskModalOpen && (
+        <TaskModal
+          onClose={() => setTaskModalOpen(false)}
+          task={editingTask}
+          people={data.people}
+          projects={data.projects}
+          presetPersonId={presetPersonId}
+        />
+      )}
     </>
   );
 }

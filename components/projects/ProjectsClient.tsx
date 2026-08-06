@@ -64,19 +64,9 @@ export function ProjectsClient({ data, canCreateProjects }: { data: PortalData; 
           </button>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => {
-              setEditingTask(null);
-              setForceStatus(undefined);
-              setTaskModalOpen(true);
-            }}
-          >
-            + Add task
-          </button>
           {canCreateProjects && (
             <button
-              className="btn btn-primary btn-sm"
+              className="btn btn-ghost btn-sm"
               onClick={() => {
                 setEditingProjectId(null);
                 setProjectModalOpen(true);
@@ -85,6 +75,16 @@ export function ProjectsClient({ data, canCreateProjects }: { data: PortalData; 
               + New project
             </button>
           )}
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setEditingTask(null);
+              setForceStatus(undefined);
+              setTaskModalOpen(true);
+            }}
+          >
+            + Add task
+          </button>
         </div>
       </div>
 
@@ -186,20 +186,22 @@ export function ProjectsClient({ data, canCreateProjects }: { data: PortalData; 
         />
       )}
 
-      <ProjectModal
-        open={projectModalOpen}
-        onClose={() => setProjectModalOpen(false)}
-        project={editingProject}
-        people={data.people}
-      />
-      <TaskModal
-        open={taskModalOpen}
-        onClose={() => setTaskModalOpen(false)}
-        task={editingTask}
-        people={data.people}
-        projects={data.projects}
-        forceStatus={forceStatus}
-      />
+      {projectModalOpen && (
+        <ProjectModal
+          onClose={() => setProjectModalOpen(false)}
+          project={editingProject}
+          people={data.people}
+        />
+      )}
+      {taskModalOpen && (
+        <TaskModal
+          onClose={() => setTaskModalOpen(false)}
+          task={editingTask}
+          people={data.people}
+          projects={data.projects}
+          forceStatus={forceStatus}
+        />
+      )}
     </>
   );
 }

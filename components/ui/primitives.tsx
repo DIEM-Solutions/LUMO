@@ -58,6 +58,18 @@ export function PeopleChips({ people }: { people: (Person | null | undefined)[] 
   );
 }
 
+/** Overlapping avatar-initials only, no names in the DOM — name is on hover via title. */
+export function AvatarStack({ people, size = "sm" }: { people: (Person | null | undefined)[]; size?: "sm" | undefined }) {
+  const list = people.filter(Boolean) as Person[];
+  return (
+    <div className="kc-people">
+      {list.map((p) => (
+        <Avatar person={p} size={size} key={p.id} />
+      ))}
+    </div>
+  );
+}
+
 export function TypeTag({ type }: { type: ProjectType }) {
   return <span className={`tag ${type}`}>{type === "client" ? "Client" : "Internal"}</span>;
 }

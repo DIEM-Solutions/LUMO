@@ -9,9 +9,9 @@ import { createStore, type PortalData } from "@/lib/domain/store";
 import { fmt, fromISO } from "@/lib/domain/dates";
 import {
   Avatar,
+  AvatarStack,
   Card,
   HealthFlag,
-  PeopleChips,
   PriorityTag,
   RunwayBar,
   StagePill,
@@ -72,7 +72,7 @@ export function ProjectDetailClient({
           <HealthFlag health={health} />
         </div>
         <div className="pc-people" style={{ marginTop: 12 }}>
-          <PeopleChips people={team} />
+          <AvatarStack people={team} />
         </div>
         <div className="runway">
           <div className="runway-labels">
@@ -98,7 +98,7 @@ export function ProjectDetailClient({
           <h2 style={{ fontSize: 16 }}>Tasks ({tasks.length})</h2>
           <button
             type="button"
-            className="btn btn-ghost btn-sm"
+            className="btn btn-primary btn-sm"
             onClick={() => {
               setEditingTask(null);
               setTaskModalOpen(true);
@@ -178,15 +178,18 @@ export function ProjectDetailClient({
         </div>
       )}
 
-      <ProjectModal open={projectModalOpen} onClose={() => setProjectModalOpen(false)} project={project} people={data.people} />
-      <TaskModal
-        open={taskModalOpen}
-        onClose={() => setTaskModalOpen(false)}
-        task={editingTask}
-        people={data.people}
-        projects={data.projects}
-        presetProjectId={projectId}
-      />
+      {projectModalOpen && (
+        <ProjectModal onClose={() => setProjectModalOpen(false)} project={project} people={data.people} />
+      )}
+      {taskModalOpen && (
+        <TaskModal
+          onClose={() => setTaskModalOpen(false)}
+          task={editingTask}
+          people={data.people}
+          projects={data.projects}
+          presetProjectId={projectId}
+        />
+      )}
     </>
   );
 }

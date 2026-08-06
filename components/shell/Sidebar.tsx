@@ -11,9 +11,9 @@ import type { Person } from "@/lib/types";
 const SECTIONS: { href: string; label: string; icon: IconName }[] = [
   { href: "/home", label: "Home", icon: "home" },
   { href: "/projects", label: "Projects & Tasks", icon: "projects" },
+  { href: "/recap", label: "Weekly Recap", icon: "recap" },
   { href: "/planning", label: "Planning", icon: "planning" },
   { href: "/team", label: "Team", icon: "capacity" },
-  { href: "/recap", label: "Weekly Recap", icon: "recap" },
   { href: "/documents", label: "Documents", icon: "documents" },
   { href: "/dayoff", label: "Request Day Off", icon: "dayoff" },
   { href: "/settings", label: "Settings", icon: "settings" },
