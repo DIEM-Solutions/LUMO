@@ -112,7 +112,7 @@ export function PlanningBoard({
                   <Avatar person={person} />
                   <div>
                     <span className="pn-name">{person.name}</span>
-                    <span className="pn-role">{person.role}{cap ? ` · ${cap.pct}%` : ""}</span>
+                    <span className="pn-role">{person.role}{cap && cap.pct != null ? ` · ${cap.pct}%` : ""}</span>
                   </div>
                   <button className="icon-btn" title={`Add task for ${person.name}`} style={{ marginLeft: "auto" }} onClick={() => onAddTaskFor(person.id)}>
                     +
