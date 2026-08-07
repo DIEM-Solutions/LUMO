@@ -21,9 +21,9 @@ begin
   select auth_user_id into charbel_ghost_auth from people where id = charbel_ghost_id;
   select auth_user_id into elias_ghost_auth from people where id = elias_ghost_id;
 
-  -- free the auth_user_id off the ghost row first (unique constraint) before
-  -- putting it on the real profile
-  update people set auth_user_id = null where id in (charbel_ghost_id, elias_ghost_id);
+  -- free the auth_user_id AND email off the ghost row first (both have unique
+  -- constraints) before putting them on the real profile
+  update people set auth_user_id = null, email = null where id in (charbel_ghost_id, elias_ghost_id);
 
   if charbel_ghost_auth is not null then
     update people set auth_user_id = charbel_ghost_auth where id = charbel_real_id;
