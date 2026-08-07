@@ -9,21 +9,23 @@ import { buildNeedsAttention } from "@/lib/domain/needsAttention";
 import { buildRecapRows } from "@/lib/domain/recap";
 import { computeCapacity } from "@/lib/domain/capacity";
 import { portfolioStats } from "@/lib/domain/stats";
+import { loadAppSettings } from "@/lib/data/settings";
 
 export default async function RecapPage() {
   const person = await getCurrentPerson();
   if (!person) redirect("/login");
 
-  const data = await loadPortalData();
+  const [data, settings] = await Promise.all([loadPortalData(), loadAppSettings()]);
   const store = createStore(data);
+  const thresholds = settings.workload_thresholds;
 
   const stats = portfolioStats(store);
   const ceoId = data.people.find((p) => p.role_type === "ceo")?.id ?? null;
-  const attention = buildNeedsAttention(store, ceoId);
+  const attention = buildNeedsAttention(store, ceoId, thresholds);
   const rows = buildRecapRows(store);
   const overloadedCount = store
     .capacityRoster()
-    .filter((p) => computeCapacity(p.id, store).status === "overloaded").length;
+    .filter((p) => computeCapacity(p.id, store, thresholds).status === "overloaded").length;
 
   const highlights: string[] = [];
   if (stats.healthCounts.blocked > 0) {

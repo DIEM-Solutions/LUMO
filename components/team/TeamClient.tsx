@@ -8,7 +8,7 @@ import { createStore, type PortalData } from "@/lib/domain/store";
 import { generateRecommendations } from "@/lib/domain/recommendations";
 import { Avatar, Card, CapacityBar, CapStatusPill, KpiCard } from "@/components/ui/primitives";
 import { RecommendationList } from "@/components/home/RecommendationCard";
-import type { CapacityBand } from "@/lib/types";
+import type { CapacityBand, WorkloadThresholds } from "@/lib/types";
 
 function mainActiveProjectFor(personId: string, store: ReturnType<typeof createStore>) {
   const active = store
@@ -20,7 +20,15 @@ function mainActiveProjectFor(personId: string, store: ReturnType<typeof createS
 
 const PLANNING_WINDOW_DAYS = 14;
 
-export function TeamClient({ data, isAdmin }: { data: PortalData; isAdmin: boolean }) {
+export function TeamClient({
+  data,
+  isAdmin,
+  thresholds,
+}: {
+  data: PortalData;
+  isAdmin: boolean;
+  thresholds: WorkloadThresholds;
+}) {
   const store = useMemo(() => createStore(data), [data]);
   const [bandFilter, setBandFilter] = useState<"all" | CapacityBand>("all");
   const [search, setSearch] = useState("");
@@ -28,7 +36,7 @@ export function TeamClient({ data, isAdmin }: { data: PortalData; isAdmin: boole
 
   const allRows = store
     .capacityRoster()
-    .map((p) => ({ person: p, cap: computeCapacity(p.id, store) }))
+    .map((p) => ({ person: p, cap: computeCapacity(p.id, store, thresholds) }))
     .sort((a, b) => (b.cap.pct ?? 0) - (a.cap.pct ?? 0));
 
   const roles = Array.from(new Set(allRows.map((r) => r.person.role).filter(Boolean))) as string[];
@@ -52,7 +60,7 @@ export function TeamClient({ data, isAdmin }: { data: PortalData; isAdmin: boole
     return true;
   });
 
-  const recs = generateRecommendations(store);
+  const recs = generateRecommendations(store, null, thresholds);
   const windowStart = today();
   const windowEnd = addDays(windowStart, PLANNING_WINDOW_DAYS - 1);
   const absencesInWindow = data.dayOff.filter(

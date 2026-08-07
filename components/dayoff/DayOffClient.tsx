@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { totalApprovedLeaveDays } from "@/lib/domain/capacity";
-import { fmt, fromISO, today, dayDiff } from "@/lib/domain/dates";
+import { fmt, fromISO, today, dayDiff, type WorkingCalendar } from "@/lib/domain/dates";
 import { Avatar, Card } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
 import { decideDayOff, markDayOffSeen } from "@/app/(portal)/dayoff/actions";
@@ -39,11 +39,13 @@ export function DayOffClient({
   people,
   dayOff,
   canApprove,
+  calendar,
 }: {
   currentPerson: Person;
   people: Person[];
   dayOff: DayOff[];
   canApprove: boolean;
+  calendar: WorkingCalendar;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -54,7 +56,7 @@ export function DayOffClient({
   const personById = (id: string) => people.find((p) => p.id === id) ?? null;
 
   const myRequests = dayOff.filter((d) => d.person_id === currentPerson.id).sort((a, b) => (a.start_date < b.start_date ? 1 : -1));
-  const usedDays = totalApprovedLeaveDays(currentPerson.id, dayOff);
+  const usedDays = totalApprovedLeaveDays(currentPerson.id, dayOff, calendar);
   const remaining = Math.max(0, currentPerson.leave_balance_days - usedDays);
 
   const pending = dayOff.filter((d) => d.status === "pending").sort((a, b) => (a.submitted_date < b.submitted_date ? -1 : 1));

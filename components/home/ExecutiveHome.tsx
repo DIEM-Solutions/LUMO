@@ -10,14 +10,24 @@ import { Card, KpiCard } from "@/components/ui/primitives";
 import { DonutWithLegend } from "@/components/ui/DonutWithLegend";
 import { NeedsAttentionCard } from "@/components/home/NeedsAttentionCard";
 import { ActivityFeedList } from "@/components/activity/ActivityFeedList";
-import type { ActivityLogEntry } from "@/lib/types";
+import type { ActivityLogEntry, WorkloadThresholds } from "@/lib/types";
 
-export function ExecutiveHome({ store, ceoId, activity }: { store: Store; ceoId: string | null; activity: ActivityLogEntry[] }) {
+export function ExecutiveHome({
+  store,
+  ceoId,
+  activity,
+  thresholds,
+}: {
+  store: Store;
+  ceoId: string | null;
+  activity: ActivityLogEntry[];
+  thresholds: WorkloadThresholds;
+}) {
   const stats = portfolioStats(store);
-  const capRows = store.capacityRoster().map((p) => ({ person: p, cap: computeCapacity(p.id, store) }));
+  const capRows = store.capacityRoster().map((p) => ({ person: p, cap: computeCapacity(p.id, store, thresholds) }));
   const overloadedCount = capRows.filter((r) => r.cap.status === "overloaded").length;
   const overdueTasks = overdueTaskCount(store);
-  const attnItems = buildNeedsAttention(store, ceoId);
+  const attnItems = buildNeedsAttention(store, ceoId, thresholds);
   const decisionsRequired = attnItems.filter((a) => a.kind === "approval").length;
   const criticalDeadlines = store.data.projects.filter((p) => {
     const tasks = store.tasksFor(p.id);

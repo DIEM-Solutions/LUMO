@@ -9,11 +9,19 @@ import { MatrixTable } from "./MatrixTable";
 import { KanbanBoard } from "./KanbanBoard";
 import { ProjectModal } from "./ProjectModal";
 import { TaskModal } from "./TaskModal";
-import type { HealthValue, Task, TaskStatus } from "@/lib/types";
+import type { HealthValue, Task, TaskStatus, WorkloadThresholds } from "@/lib/types";
 
 type Subtab = "overview" | "matrix" | "kanban";
 
-export function ProjectsClient({ data, canCreateProjects }: { data: PortalData; canCreateProjects: boolean }) {
+export function ProjectsClient({
+  data,
+  canCreateProjects,
+  thresholds,
+}: {
+  data: PortalData;
+  canCreateProjects: boolean;
+  thresholds: WorkloadThresholds;
+}) {
   const store = useMemo(() => createStore(data), [data]);
 
   const [subtab, setSubtab] = useState<Subtab>("overview");
@@ -166,7 +174,7 @@ export function ProjectsClient({ data, canCreateProjects }: { data: PortalData; 
           <div className="empty-state">No projects match these filters.</div>
         ))}
 
-      {subtab === "matrix" && <MatrixTable projects={filteredProjects} store={store} />}
+      {subtab === "matrix" && <MatrixTable projects={filteredProjects} store={store} thresholds={thresholds} />}
 
       {subtab === "kanban" && (
         <KanbanBoard

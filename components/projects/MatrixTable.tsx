@@ -3,7 +3,7 @@ import { computeCapacity } from "@/lib/domain/capacity";
 import { round } from "@/lib/domain/dates";
 import type { Store } from "@/lib/domain/store";
 import { Avatar } from "@/components/ui/primitives";
-import type { Project } from "@/lib/types";
+import type { Project, WorkloadThresholds } from "@/lib/types";
 
 function clientInternalSplit(personId: string, store: Store) {
   const tasks = store.activeTasksForPerson(personId);
@@ -21,7 +21,15 @@ function clientInternalSplit(personId: string, store: Store) {
   return { clientPct: round((client / total) * 100), internalPct: round((internal / total) * 100) };
 }
 
-export function MatrixTable({ projects, store }: { projects: Project[]; store: Store }) {
+export function MatrixTable({
+  projects,
+  store,
+  thresholds,
+}: {
+  projects: Project[];
+  store: Store;
+  thresholds: WorkloadThresholds;
+}) {
   const people = store.data.people.filter((p) => p.role_type !== "ceo");
 
   return (
@@ -41,7 +49,7 @@ export function MatrixTable({ projects, store }: { projects: Project[]; store: S
           </thead>
           <tbody>
             {people.map((person) => {
-              const cap = computeCapacity(person.id, store);
+              const cap = computeCapacity(person.id, store, thresholds);
               const split = clientInternalSplit(person.id, store);
               return (
                 <tr key={person.id}>

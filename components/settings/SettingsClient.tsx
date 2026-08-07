@@ -3,13 +3,27 @@
 import { useState } from "react";
 import { Avatar, Card } from "@/components/ui/primitives";
 import { PersonModal } from "./PersonModal";
-import type { Person } from "@/lib/types";
+import { WorkspaceSettingsPanel } from "./WorkspaceSettingsPanel";
+import type { AppSettings, Person, PublicHoliday } from "@/lib/types";
 
 const ROLE_TYPE_LABEL: Record<string, string> = { ceo: "Executive", admin: "Admin", employee: "Employee" };
 
-export function SettingsClient({ currentPerson, people, isAdmin }: { currentPerson: Person; people: Person[]; isAdmin: boolean }) {
+export function SettingsClient({
+  currentPerson,
+  people,
+  isAdmin,
+  settings,
+  holidays,
+}: {
+  currentPerson: Person;
+  people: Person[];
+  isAdmin: boolean;
+  settings: AppSettings;
+  holidays: PublicHoliday[];
+}) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const [tab, setTab] = useState<"team" | "workspace">("team");
 
   if (!isAdmin) {
     return (
@@ -50,65 +64,80 @@ export function SettingsClient({ currentPerson, people, isAdmin }: { currentPers
   return (
     <>
       <div className="panel-head-row">
-        <h2>Team management</h2>
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={() => {
-            setEditingPerson(null);
-            setModalOpen(true);
-          }}
-        >
-          + Add team member
+        <h2>Settings</h2>
+        {tab === "team" && (
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              setEditingPerson(null);
+              setModalOpen(true);
+            }}
+          >
+            + Add team member
+          </button>
+        )}
+      </div>
+
+      <div className="subtabs" style={{ marginBottom: 18 }}>
+        <button className={`subtab-btn${tab === "team" ? " active" : ""}`} onClick={() => setTab("team")}>
+          Team management
+        </button>
+        <button className={`subtab-btn${tab === "workspace" ? " active" : ""}`} onClick={() => setTab("workspace")}>
+          Workspace settings
         </button>
       </div>
 
-      <div className="admin-table-wrap">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Access</th>
-              <th>Email</th>
-              <th>Capacity</th>
-              <th>Status</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {people.map((p) => (
-              <tr key={p.id} className={p.active === false ? "admin-inactive" : ""}>
-                <td>
-                  <div className="admin-row-name">
-                    <Avatar person={p} size="sm" />
-                    {p.name}
-                  </div>
-                </td>
-                <td>{p.role ?? "—"}</td>
-                <td>{ROLE_TYPE_LABEL[p.role_type]}</td>
-                <td>{p.email ?? "—"}</td>
-                <td>{p.capacity_baseline != null ? `${p.capacity_baseline}d/wk` : "—"}</td>
-                <td>
-                  <span className={`cap-status-pill ${p.active === false ? "unknown" : "available"}`}>
-                    {p.active === false ? "Inactive" : "Active"}
-                  </span>
-                </td>
-                <td>
-                  <button
-                    className="linklike"
-                    onClick={() => {
-                      setEditingPerson(p);
-                      setModalOpen(true);
-                    }}
-                  >
-                    Edit
-                  </button>
-                </td>
+      {tab === "team" ? (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Access</th>
+                <th>Email</th>
+                <th>Capacity</th>
+                <th>Status</th>
+                <th />
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {people.map((p) => (
+                <tr key={p.id} className={p.active === false ? "admin-inactive" : ""}>
+                  <td>
+                    <div className="admin-row-name">
+                      <Avatar person={p} size="sm" />
+                      {p.name}
+                    </div>
+                  </td>
+                  <td>{p.role ?? "—"}</td>
+                  <td>{ROLE_TYPE_LABEL[p.role_type]}</td>
+                  <td>{p.email ?? "—"}</td>
+                  <td>{p.capacity_baseline != null ? `${p.capacity_baseline}d/wk` : "—"}</td>
+                  <td>
+                    <span className={`cap-status-pill ${p.active === false ? "unknown" : "available"}`}>
+                      {p.active === false ? "Inactive" : "Active"}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      className="linklike"
+                      onClick={() => {
+                        setEditingPerson(p);
+                        setModalOpen(true);
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <WorkspaceSettingsPanel settings={settings} holidays={holidays} />
+      )}
 
       {modalOpen && <PersonModal onClose={() => setModalOpen(false)} person={editingPerson} />}
     </>

@@ -1,7 +1,7 @@
 import { dayDiff, fromISO, today } from "@/lib/domain/dates";
 import type { ActivityKind, ActivityLogEntry, Project } from "@/lib/types";
 
-const ICON: Record<ActivityKind, string> = {
+export const ACTIVITY_ICON: Record<ActivityKind, string> = {
   task_completed: "✓",
   task_created: "+",
   document_uploaded: "📄",
@@ -10,7 +10,7 @@ const ICON: Record<ActivityKind, string> = {
   dayoff_decided: "🌴",
 };
 
-function relativeTime(iso: string): string {
+export function relativeTime(iso: string): string {
   const d = fromISO(iso.slice(0, 10));
   const diffDays = dayDiff(d, today());
   const created = new Date(iso);
@@ -43,7 +43,7 @@ export function ActivityFeedList({
         const proj = e.project_id ? projects.find((p) => p.id === e.project_id) : null;
         return (
           <div className="activity-row" key={e.id}>
-            <div className={`activity-icon ${e.kind}`}>{ICON[e.kind]}</div>
+            <div className={`activity-icon ${e.kind}`}>{ACTIVITY_ICON[e.kind]}</div>
             <div className="activity-body">
               <div className="activity-title">{e.title}</div>
               <div className="activity-meta">

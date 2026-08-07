@@ -2,7 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { Permissions, RoleType } from "@/lib/types";
+import type { Permissions, PortalBranding, RoleType, WorkloadThresholds } from "@/lib/types";
+
+function revalidateSettingsConsumers() {
+  revalidatePath("/settings");
+  revalidatePath("/home");
+  revalidatePath("/team");
+  revalidatePath("/projects");
+  revalidatePath("/planning");
+  revalidatePath("/recap");
+  revalidatePath("/dayoff");
+}
 
 export type PersonFormInput = {
   name: string;
@@ -61,4 +71,42 @@ export async function setPersonActive(id: string, active: boolean) {
   await supabase.from("people").update({ active }).eq("id", id);
   revalidatePath("/settings");
   revalidatePath("/team");
+}
+
+export type AppSettingsInput = {
+  workloadThresholds: WorkloadThresholds;
+  workingDays: number[];
+  projectCategories: string[];
+  documentTags: string[];
+  branding: PortalBranding;
+};
+
+export async function updateAppSettings(input: AppSettingsInput) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("app_settings").upsert({
+    id: 1,
+    workload_thresholds: input.workloadThresholds,
+    working_days: input.workingDays,
+    project_categories: input.projectCategories,
+    document_tags: input.documentTags,
+    branding: input.branding,
+  });
+  if (error) throw new Error(error.message);
+  revalidateSettingsConsumers();
+}
+
+export async function addPublicHoliday(date: string, name: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("public_holidays").insert({ date, name });
+  if (error) throw new Error(error.message);
+  revalidatePath("/settings");
+  revalidatePath("/dayoff");
+}
+
+export async function deletePublicHoliday(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("public_holidays").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/settings");
+  revalidatePath("/dayoff");
 }

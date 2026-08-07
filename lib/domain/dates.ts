@@ -8,6 +8,16 @@ export function isWeekend(d: Date): boolean {
   return d.getDay() === 0 || d.getDay() === 6;
 }
 
+export type WorkingCalendar = {
+  workingDays: number[]; // 0=Sun..6=Sat
+  holidays: Set<string>; // ISO date strings
+};
+
+export function isNonWorkingDay(d: Date, calendar: WorkingCalendar): boolean {
+  if (!calendar.workingDays.includes(d.getDay())) return true;
+  return calendar.holidays.has(toISO(d));
+}
+
 export function nextWorkingDay(d: Date): Date {
   let x = new Date(d);
   while (isWeekend(x)) x = addDays(x, 1);

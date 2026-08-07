@@ -4,7 +4,7 @@ import { approvedDayOffOn, computeCapacity, taskWorkingDays } from "@/lib/domain
 import { addDays, dayDiff, DOW_SHORT, fromISO, today } from "@/lib/domain/dates";
 import { createStore, type PortalData } from "@/lib/domain/store";
 import { Avatar } from "@/components/ui/primitives";
-import type { Person, Task } from "@/lib/types";
+import type { Person, Task, WorkloadThresholds } from "@/lib/types";
 
 function segmentClass(span: Date[], d: Date) {
   const first = dayDiff(span[0], d) === 0;
@@ -17,6 +17,7 @@ function segmentClass(span: Date[], d: Date) {
 
 export function PlanningBoard({
   data,
+  thresholds,
   rangeDays,
   onRangeChange,
   personFilter,
@@ -29,6 +30,7 @@ export function PlanningBoard({
   onAddTaskFor,
 }: {
   data: PortalData;
+  thresholds: WorkloadThresholds;
   rangeDays: number;
   onRangeChange: (n: number) => void;
   personFilter: string;
@@ -105,7 +107,7 @@ export function PlanningBoard({
             </div>
           ))}
           {people.map((person) => {
-            const cap = person.role_type === "ceo" ? null : computeCapacity(person.id, store);
+            const cap = person.role_type === "ceo" ? null : computeCapacity(person.id, store, thresholds);
             return (
               <div key={person.id} style={{ display: "contents" }}>
                 <div className="plan-name-cell">

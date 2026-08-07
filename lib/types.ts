@@ -225,3 +225,25 @@ export type WorkloadThresholds = {
   needsSupport: number;
   overloaded: number;
 };
+
+export type PortalBranding = {
+  logo_url?: string;
+  primary_color?: string;
+};
+
+export type AppSettings = {
+  id: number;
+  workload_thresholds: WorkloadThresholds;
+  recap_settings: { finalizeReminders?: boolean };
+  working_days: number[];
+  project_categories: string[];
+  document_tags: string[];
+  branding: PortalBranding;
+};
+
+export type PublicHoliday = {
+  id: string;
+  date: string;
+  name: string;
+  created_at: string;
+};

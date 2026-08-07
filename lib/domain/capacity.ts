@@ -1,7 +1,9 @@
 import type { CapacityBand, DayOff, ManualUtilization, Task, WorkloadThresholds } from "@/lib/types";
-import { addDays, clamp, dayDiff, fromISO, isWeekend, round, today, workingDaySpan } from "./dates";
+import { addDays, clamp, dayDiff, fromISO, isNonWorkingDay, isWeekend, round, today, workingDaySpan, type WorkingCalendar } from "./dates";
 import { computeStage } from "./stage";
 import type { Store } from "./store";
+
+export const DEFAULT_WORKING_CALENDAR: WorkingCalendar = { workingDays: [1, 2, 3, 4, 5], holidays: new Set() };
 
 export const DEFAULT_WORKLOAD_THRESHOLDS: WorkloadThresholds = {
   balanced: 60,
@@ -43,7 +45,11 @@ export function isApprovedDayOff(personId: string, date: Date, dayOff: DayOff[])
   return !!approvedDayOffOn(personId, date, dayOff);
 }
 
-export function totalApprovedLeaveDays(personId: string, dayOff: DayOff[]): number {
+export function totalApprovedLeaveDays(
+  personId: string,
+  dayOff: DayOff[],
+  calendar: WorkingCalendar = DEFAULT_WORKING_CALENDAR
+): number {
   let days = 0;
   dayOff
     .filter((d) => d.person_id === personId && d.status === "approved")
@@ -51,7 +57,7 @@ export function totalApprovedLeaveDays(personId: string, dayOff: DayOff[]): numb
       let cursor = fromISO(d.start_date);
       const end = fromISO(d.end_date);
       while (cursor <= end) {
-        if (!isWeekend(cursor)) days++;
+        if (!isNonWorkingDay(cursor, calendar)) days++;
         cursor = addDays(cursor, 1);
       }
     });

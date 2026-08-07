@@ -797,6 +797,22 @@ main.content{padding:34px 44px 76px; max-width:1800px;}
 .tag-chip-row{display:flex; flex-wrap:wrap; gap:5px;}
 .tag-chip{font-size:10px; font-weight:600; padding:3px 9px; border-radius:999px; background:var(--bg-deep); color:var(--ink-soft);}
 
+/* ================= NOTIFICATIONS ================= */
+.notif-bell-btn{position:relative; width:38px; height:38px; border-radius:11px; border:1px solid var(--border); background:var(--surface); font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;}
+.notif-bell-btn:hover{background:var(--bg-deep);}
+.notif-badge{position:absolute; top:-4px; right:-4px; background:var(--diem-orange); color:#fff; font-size:9.5px; font-weight:800; border-radius:999px; min-width:16px; height:16px; padding:0 4px; display:flex; align-items:center; justify-content:center; border:2px solid var(--surface);}
+.notif-panel{position:absolute; top:calc(100% + 8px); right:0; width:340px; max-width:calc(100vw - 32px); max-height:420px; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-lift); z-index:170;}
+.notif-panel-head{display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--border-soft); font-size:12.5px; font-weight:700;}
+.notif-panel-list{overflow-y:auto;}
+.notif-item{display:flex; align-items:flex-start; gap:10px; width:100%; text-align:left; background:none; border:none; border-bottom:1px solid var(--border-soft); padding:11px 14px; cursor:pointer;}
+.notif-item:last-child{border-bottom:none;}
+.notif-item:hover{background:var(--bg-deep);}
+.notif-item.unread{background:var(--pri-med-bg,var(--bg-deep));}
+.notif-item-body{min-width:0; flex:1;}
+.notif-item-title{font-size:12.5px; font-weight:600; color:var(--ink);}
+.notif-item-meta{font-size:10.5px; color:var(--ink-faint); margin-top:2px;}
+.notif-dot{width:7px; height:7px; border-radius:50%; background:var(--diem-orange); flex-shrink:0; margin-top:5px;}
+
 /* ================= ADMIN TABLE ================= */
 .admin-table-wrap{overflow-x:auto; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow);}
 .admin-table{width:100%; border-collapse:collapse; min-width:760px;}

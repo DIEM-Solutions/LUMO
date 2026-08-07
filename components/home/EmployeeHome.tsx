@@ -9,7 +9,7 @@ import type { Store } from "@/lib/domain/store";
 import { Card, CapacityBar, HealthFlag, KpiCard, RunwayBar, TypeTag } from "@/components/ui/primitives";
 import { RecommendationList } from "@/components/home/RecommendationCard";
 import { ActivityFeedList } from "@/components/activity/ActivityFeedList";
-import type { ActivityLogEntry, Project, Task } from "@/lib/types";
+import type { ActivityLogEntry, Project, Task, WorkloadThresholds } from "@/lib/types";
 
 function employeeProjectSummary(personId: string, project: Project, store: Store) {
   const myTasksInProj = store.tasksFor(project.id).filter((tk) => store.isAssignedTo(tk, personId));
@@ -90,13 +90,23 @@ function MyProjectCard({ summary, store }: { summary: ReturnType<typeof employee
   );
 }
 
-export function EmployeeHome({ store, personId, activity }: { store: Store; personId: string; activity: ActivityLogEntry[] }) {
+export function EmployeeHome({
+  store,
+  personId,
+  activity,
+  thresholds,
+}: {
+  store: Store;
+  personId: string;
+  activity: ActivityLogEntry[];
+  thresholds: WorkloadThresholds;
+}) {
   const myProjects = store.projectsForPerson(personId);
   const myTasks = store.activeTasksForPerson(personId);
   const dueTodayOrOverdue = myTasks.filter((tk) => dayDiff(today(), fromISO(tk.due_date)) <= 0);
   const myBlockedTasks = myTasks.filter((tk) => tk.status === "blocked");
-  const cap = computeCapacity(personId, store);
-  const recs = generateRecommendations(store, personId);
+  const cap = computeCapacity(personId, store, thresholds);
+  const recs = generateRecommendations(store, personId, thresholds);
   const summaries = myProjects
     .map((p) => employeeProjectSummary(personId, p, store))
     .sort((a, b) => {
