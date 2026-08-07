@@ -65,20 +65,20 @@ export function ExecutiveHome({ store, ceoId }: { store: Store; ceoId: string | 
       <div className="ceo-section ceo-tri">
         <Card>
           <div className="panel-head-row">
-            <h2 style={{ fontSize: 16 }}>Portfolio health</h2>
+            <h2>Portfolio health</h2>
           </div>
           <DonutWithLegend segments={healthSegments} centerLabel="projects" />
         </Card>
         <Card>
           <div className="panel-head-row">
-            <h2 style={{ fontSize: 16 }}>Team capacity</h2>
+            <h2>Team capacity</h2>
             <Link href="/team" className="linklike">Open →</Link>
           </div>
           <DonutWithLegend segments={capSegments} centerLabel="people" />
         </Card>
         <Card>
           <div className="panel-head-row">
-            <h2 style={{ fontSize: 16 }}>Upcoming deadlines</h2>
+            <h2>Upcoming deadlines</h2>
           </div>
           <div className="timeline-list">
             {upcomingDeadlines.length ? (

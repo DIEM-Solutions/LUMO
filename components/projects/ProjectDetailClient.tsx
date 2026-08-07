@@ -95,7 +95,7 @@ export function ProjectDetailClient({
 
       <div className="section-block" style={{ marginTop: 24 }}>
         <div className="panel-head-row">
-          <h2 style={{ fontSize: 16 }}>Tasks ({tasks.length})</h2>
+          <h2>Tasks ({tasks.length})</h2>
           <button
             type="button"
             className="btn btn-primary btn-sm"
@@ -148,7 +148,7 @@ export function ProjectDetailClient({
 
       {blockers.length > 0 && (
         <div className="section-block" style={{ marginTop: 24 }}>
-          <h2 style={{ fontSize: 16, marginBottom: 13 }}>Blockers</h2>
+          <h2 style={{ fontSize: 18, marginBottom: 13 }}>Blockers</h2>
           {blockers.map((b) => (
             <div className={`blocker-card urgency-${b.urgency} status-${b.status}`} key={b.id}>
               <div className="blocker-head">

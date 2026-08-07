@@ -88,11 +88,11 @@ export function PlanningBoard({
         <span><i className="pl-swatch not-started" />Not started</span>
         <span><i className="pl-swatch in-progress" />In progress</span>
         <span><i className="pl-swatch blocked" />Blocked</span>
-        <span><i className="pl-swatch dayoff" />Approved day off</span>
+        <span><i className="pl-swatch dayoff" />Day off</span>
         <span style={{ borderLeft: "1px solid var(--border-soft)", paddingLeft: 14 }}>
-          <i className="pl-swatch" style={{ background: "var(--client-fg)" }} />Client (left edge)
+          <i className="pl-swatch" style={{ background: "var(--client-fg)" }} />Client
         </span>
-        <span><i className="pl-swatch" style={{ background: "var(--internal-fg)" }} />Internal (left edge)</span>
+        <span><i className="pl-swatch" style={{ background: "var(--internal-fg)" }} />Internal</span>
       </div>
 
       <div className="plan-wrap">

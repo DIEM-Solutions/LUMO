@@ -62,7 +62,7 @@ export function TeamClient({ data }: { data: PortalData }) {
       <div className="two-col">
         <Card>
           <div className="panel-head-row">
-            <h2 style={{ fontSize: 16 }}>Team</h2>
+            <h2>Team</h2>
             {bandFilter !== "all" && (
               <button className="linklike" onClick={() => setBandFilter("all")}>
                 Showing: {CAP_STATUS_LABEL[bandFilter]} — clear ✕
@@ -107,7 +107,7 @@ export function TeamClient({ data }: { data: PortalData }) {
           </Card>
           <Card>
             <div className="panel-head-row">
-              <h2 style={{ fontSize: 16 }}>Can provide support</h2>
+              <h2>Can provide support</h2>
             </div>
             {canHelp.length ? (
               <div className="people-chip-row">
@@ -124,7 +124,7 @@ export function TeamClient({ data }: { data: PortalData }) {
           </Card>
           <Card>
             <div className="panel-head-row">
-              <h2 style={{ fontSize: 16 }}>Approved absences</h2>
+              <h2>Approved absences</h2>
             </div>
             {absencesInWindow.length ? (
               absencesInWindow.map((d) => {

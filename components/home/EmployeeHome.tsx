@@ -123,7 +123,7 @@ export function EmployeeHome({ store, personId }: { store: Store; personId: stri
       <div className="two-col">
         <div className="stack-gap">
           <div className="panel-head-row">
-            <h2 style={{ fontSize: 16 }}>My projects</h2>
+            <h2>My projects</h2>
           </div>
           {summaries.length ? (
             <div className="myproj-grid-wrap">
@@ -138,7 +138,7 @@ export function EmployeeHome({ store, personId }: { store: Store; personId: stri
         <div className="stack-gap">
           <Card>
             <div className="panel-head-row">
-              <h2 style={{ fontSize: 16 }}>My capacity</h2>
+              <h2>My capacity</h2>
             </div>
             <div className="cap-bar-lbl">
               Capacity used: <b>{cap.pct != null ? `${cap.pct}%` : "—"}</b> — current 2-week workload
@@ -164,7 +164,7 @@ export function EmployeeHome({ store, personId }: { store: Store; personId: stri
           </Card>
           <Card>
             <div className="panel-head-row">
-              <h2 style={{ fontSize: 16 }}>Upcoming deadlines</h2>
+              <h2>Upcoming deadlines</h2>
             </div>
             {upcomingAll.length ? (
               upcomingAll.map((tk) => {
