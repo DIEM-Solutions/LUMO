@@ -5,12 +5,13 @@ import { EmployeeHome } from "@/components/home/EmployeeHome";
 import { getCurrentPerson } from "@/lib/auth/session";
 import { createStore } from "@/lib/domain/store";
 import { loadPortalData } from "@/lib/data/portal";
+import { loadRecentActivity } from "@/lib/data/activity";
 
 export default async function HomePage() {
   const person = await getCurrentPerson();
   if (!person) redirect("/login");
 
-  const data = await loadPortalData();
+  const [data, activity] = await Promise.all([loadPortalData(), loadRecentActivity(12)]);
   const store = createStore(data);
   const isExec = person.role_type === "ceo" || person.role_type === "admin";
   const ceoId = data.people.find((p) => p.role_type === "ceo")?.id ?? null;
@@ -19,7 +20,11 @@ export default async function HomePage() {
     <>
       <Topbar eyebrow="DIEM Portal" title={isExec ? "Home" : "My Workspace"} />
       <main className="content">
-        {isExec ? <ExecutiveHome store={store} ceoId={ceoId} /> : <EmployeeHome store={store} personId={person.id} />}
+        {isExec ? (
+          <ExecutiveHome store={store} ceoId={ceoId} activity={activity} />
+        ) : (
+          <EmployeeHome store={store} personId={person.id} activity={activity} />
+        )}
       </main>
     </>
   );

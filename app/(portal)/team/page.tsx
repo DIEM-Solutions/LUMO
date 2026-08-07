@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Topbar } from "@/components/shell/Topbar";
 import { TeamClient } from "@/components/team/TeamClient";
-import { getCurrentPerson } from "@/lib/auth/session";
+import { getCurrentPerson, personPermissions } from "@/lib/auth/session";
 import { loadPortalData } from "@/lib/data/portal";
 
 export default async function TeamPage() {
@@ -9,12 +9,13 @@ export default async function TeamPage() {
   if (!person) redirect("/login");
 
   const data = await loadPortalData();
+  const perms = personPermissions(person);
 
   return (
     <>
       <Topbar eyebrow="DIEM Portal" title="Team" />
       <main className="content">
-        <TeamClient data={data} />
+        <TeamClient data={data} isAdmin={perms.isAdmin} />
       </main>
     </>
   );

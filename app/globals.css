@@ -764,6 +764,48 @@ main.content{padding:34px 44px 76px; max-width:1800px;}
 .divider{height:1px; background:var(--border-soft); margin:16px 0;}
 .hint-banner{background:var(--stage-prog-bg); color:var(--stage-prog-fg); border-radius:12px; padding:11px 15px; font-size:12.5px; font-weight:600; display:flex; align-items:center; gap:9px; margin-bottom:16px;}
 
+/* ================= WEEKLY RECAP TABLE ================= */
+.recap-table-wrap{overflow-x:auto; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow);}
+.recap-table{width:100%; border-collapse:collapse; min-width:920px;}
+.recap-table th{background:var(--surface-alt); font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-faint); text-align:left; padding:12px 16px; border-bottom:1px solid var(--border-soft); white-space:nowrap;}
+.recap-table td{padding:14px 16px; border-bottom:1px solid var(--border-soft); font-size:12.5px; vertical-align:top; color:var(--ink);}
+.recap-table tr:last-child td{border-bottom:none;}
+.recap-table .rt-project{font-weight:700;}
+.recap-table .rt-muted{color:var(--ink-faint);}
+.recap-table .rt-owner{display:flex; align-items:center; gap:8px; white-space:nowrap;}
+
+/* ================= ACTIVITY FEED ================= */
+.activity-list{display:flex; flex-direction:column;}
+.activity-row{display:flex; align-items:flex-start; gap:12px; padding:13px 4px; border-bottom:1px solid var(--border-soft);}
+.activity-row:last-child{border-bottom:none;}
+.activity-icon{width:30px; height:30px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px; background:var(--bg-deep);}
+.activity-icon.task_completed{background:var(--stage-done-bg);}
+.activity-icon.task_created{background:var(--stage-ns-bg);}
+.activity-icon.document_uploaded{background:var(--client-bg);}
+.activity-icon.project_updated{background:var(--internal-bg);}
+.activity-icon.dayoff_requested, .activity-icon.dayoff_decided{background:#F0EAF8;}
+.activity-body{min-width:0; flex:1;}
+.activity-title{font-size:13px; font-weight:600; color:var(--ink);}
+.activity-meta{font-size:11px; color:var(--ink-faint); margin-top:2px;}
+
+/* ================= LEAVE BALANCE ================= */
+.balance-hero{display:flex; align-items:center; gap:20px; padding:20px 24px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); margin-bottom:20px;}
+.balance-num{font-family:var(--font-sans),sans-serif; font-weight:700; font-size:38px; color:var(--ink); line-height:1;}
+.balance-label{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+
+/* ================= TAG CHIPS ================= */
+.tag-chip-row{display:flex; flex-wrap:wrap; gap:5px;}
+.tag-chip{font-size:10px; font-weight:600; padding:3px 9px; border-radius:999px; background:var(--bg-deep); color:var(--ink-soft);}
+
+/* ================= ADMIN TABLE ================= */
+.admin-table-wrap{overflow-x:auto; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow);}
+.admin-table{width:100%; border-collapse:collapse; min-width:760px;}
+.admin-table th{background:var(--surface-alt); font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-faint); text-align:left; padding:12px 16px; border-bottom:1px solid var(--border-soft); white-space:nowrap;}
+.admin-table td{padding:12px 16px; border-bottom:1px solid var(--border-soft); font-size:12.5px; vertical-align:middle; color:var(--ink);}
+.admin-table tr:last-child td{border-bottom:none;}
+.admin-row-name{display:flex; align-items:center; gap:10px; font-weight:600;}
+.admin-inactive{opacity:.5;}
+
 @media(max-width:900px){
   .sidebar{position:fixed; left:0; top:0; z-index:100; box-shadow:var(--shadow-lift);}
   .sidebar:not(.collapsed){width:236px;}

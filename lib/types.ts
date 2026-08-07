@@ -31,6 +31,8 @@ export type Person = {
   solid: string | null;
   permissions: Permissions;
   manual_utilization: ManualUtilization | null;
+  next_assessment_date: string | null;
+  leave_balance_days: number;
   created_at: string;
 };
 
@@ -184,6 +186,28 @@ export type Document = {
   upload_date: string;
   updated_date: string;
   file_note: string;
+  tags: string[];
+  folder: string | null;
+  link_url: string | null;
+  created_at: string;
+};
+
+export type ActivityKind =
+  | "task_completed"
+  | "task_created"
+  | "document_uploaded"
+  | "project_updated"
+  | "dayoff_requested"
+  | "dayoff_decided";
+
+export type ActivityLogEntry = {
+  id: string;
+  kind: ActivityKind;
+  actor_id: string | null;
+  project_id: string | null;
+  ref_id: string | null;
+  title: string;
+  detail: string | null;
   created_at: string;
 };
 

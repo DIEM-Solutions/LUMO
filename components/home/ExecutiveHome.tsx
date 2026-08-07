@@ -9,8 +9,10 @@ import { overdueTaskCount, portfolioStats } from "@/lib/domain/stats";
 import { Card, KpiCard } from "@/components/ui/primitives";
 import { DonutWithLegend } from "@/components/ui/DonutWithLegend";
 import { NeedsAttentionCard } from "@/components/home/NeedsAttentionCard";
+import { ActivityFeedList } from "@/components/activity/ActivityFeedList";
+import type { ActivityLogEntry } from "@/lib/types";
 
-export function ExecutiveHome({ store, ceoId }: { store: Store; ceoId: string | null }) {
+export function ExecutiveHome({ store, ceoId, activity }: { store: Store; ceoId: string | null; activity: ActivityLogEntry[] }) {
   const stats = portfolioStats(store);
   const capRows = store.capacityRoster().map((p) => ({ person: p, cap: computeCapacity(p.id, store) }));
   const overloadedCount = capRows.filter((r) => r.cap.status === "overloaded").length;
@@ -101,6 +103,15 @@ export function ExecutiveHome({ store, ceoId }: { store: Store; ceoId: string | 
               <div className="empty-state">Nothing scheduled.</div>
             )}
           </div>
+        </Card>
+      </div>
+
+      <div className="ceo-section">
+        <div className="panel-head-row">
+          <h2>Recent activity</h2>
+        </div>
+        <Card>
+          <ActivityFeedList entries={activity} projects={store.data.projects} limit={8} />
         </Card>
       </div>
     </>

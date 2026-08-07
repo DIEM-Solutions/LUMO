@@ -8,7 +8,8 @@ import { computeStage } from "@/lib/domain/stage";
 import type { Store } from "@/lib/domain/store";
 import { Card, CapacityBar, HealthFlag, KpiCard, RunwayBar, TypeTag } from "@/components/ui/primitives";
 import { RecommendationList } from "@/components/home/RecommendationCard";
-import type { Project, Task } from "@/lib/types";
+import { ActivityFeedList } from "@/components/activity/ActivityFeedList";
+import type { ActivityLogEntry, Project, Task } from "@/lib/types";
 
 function employeeProjectSummary(personId: string, project: Project, store: Store) {
   const myTasksInProj = store.tasksFor(project.id).filter((tk) => store.isAssignedTo(tk, personId));
@@ -89,7 +90,7 @@ function MyProjectCard({ summary, store }: { summary: ReturnType<typeof employee
   );
 }
 
-export function EmployeeHome({ store, personId }: { store: Store; personId: string }) {
+export function EmployeeHome({ store, personId, activity }: { store: Store; personId: string; activity: ActivityLogEntry[] }) {
   const myProjects = store.projectsForPerson(personId);
   const myTasks = store.activeTasksForPerson(personId);
   const dueTodayOrOverdue = myTasks.filter((tk) => dayDiff(today(), fromISO(tk.due_date)) <= 0);
@@ -185,6 +186,12 @@ export function EmployeeHome({ store, personId }: { store: Store; personId: stri
           <Card>
             <div className="section-title">Recommended for you</div>
             <RecommendationList recommendations={recs} emptyText="You're in good shape — no action needed." />
+          </Card>
+          <Card>
+            <div className="panel-head-row">
+              <h2>Recent activity</h2>
+            </div>
+            <ActivityFeedList entries={activity} projects={store.data.projects} limit={6} />
           </Card>
         </div>
       </div>

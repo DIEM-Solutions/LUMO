@@ -43,6 +43,21 @@ export function isApprovedDayOff(personId: string, date: Date, dayOff: DayOff[])
   return !!approvedDayOffOn(personId, date, dayOff);
 }
 
+export function totalApprovedLeaveDays(personId: string, dayOff: DayOff[]): number {
+  let days = 0;
+  dayOff
+    .filter((d) => d.person_id === personId && d.status === "approved")
+    .forEach((d) => {
+      let cursor = fromISO(d.start_date);
+      const end = fromISO(d.end_date);
+      while (cursor <= end) {
+        if (!isWeekend(cursor)) days++;
+        cursor = addDays(cursor, 1);
+      }
+    });
+  return days;
+}
+
 export function dayOffDaysInWindow(
   personId: string,
   windowStart: Date,
