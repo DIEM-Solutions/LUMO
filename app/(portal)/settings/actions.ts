@@ -100,14 +100,16 @@ export type AppSettingsInput = {
 
 export async function updateAppSettings(input: AppSettingsInput) {
   const supabase = await createClient();
-  const { error } = await supabase.from("app_settings").upsert({
-    id: 1,
-    workload_thresholds: input.workloadThresholds,
-    working_days: input.workingDays,
-    project_categories: input.projectCategories,
-    document_tags: input.documentTags,
-    branding: input.branding,
-  });
+  const { error } = await supabase
+    .from("app_settings")
+    .update({
+      workload_thresholds: input.workloadThresholds,
+      working_days: input.workingDays,
+      project_categories: input.projectCategories,
+      document_tags: input.documentTags,
+      branding: input.branding,
+    })
+    .eq("id", 1);
   if (error) throw new Error(error.message);
   revalidateSettingsConsumers();
 }
