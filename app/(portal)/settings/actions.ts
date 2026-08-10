@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getCurrentPerson, personPermissions } from "@/lib/auth/session";
+import { getSiteUrl } from "@/lib/site-url";
 import type { Permissions, PortalBranding, RoleType, WorkloadThresholds } from "@/lib/types";
 
 function revalidateSettingsConsumers() {
@@ -64,6 +67,20 @@ export async function updatePerson(id: string, input: PersonFormInput) {
   if (error) throw new Error(error.message);
   revalidatePath("/settings");
   revalidatePath("/team");
+}
+
+export async function inviteTeamMember(email: string) {
+  const caller = await getCurrentPerson();
+  const perms = personPermissions(caller);
+  if (!perms.canEditTeam) {
+    throw new Error("You don't have permission to invite team members.");
+  }
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${getSiteUrl()}/invite`,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/settings");
 }
 
 export async function setPersonActive(id: string, active: boolean) {

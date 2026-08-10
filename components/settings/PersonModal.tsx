@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
-import { createPerson, setPersonActive, updatePerson } from "@/app/(portal)/settings/actions";
+import { createPerson, inviteTeamMember, setPersonActive, updatePerson } from "@/app/(portal)/settings/actions";
 import type { Permissions, Person, RoleType } from "@/lib/types";
 
 const PERMISSION_FIELDS: { key: keyof Permissions; label: string }[] = [
@@ -31,6 +31,8 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
   const [permissions, setPermissions] = useState<Permissions>(person?.permissions ?? {});
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sendInvite, setSendInvite] = useState(true);
+  const [invitingExisting, setInvitingExisting] = useState(false);
 
   function togglePerm(key: keyof Permissions) {
     setPermissions((p) => ({ ...p, [key]: !p[key] }));
@@ -59,12 +61,34 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
         toast("Team member updated");
       } else {
         await createPerson(input);
-        toast("Team member added");
+        if (input.email && sendInvite) {
+          try {
+            await inviteTeamMember(input.email);
+            toast("Team member added — invite email sent");
+          } catch {
+            toast("Team member added, but the invite email failed to send — try again from their profile");
+          }
+        } else {
+          toast("Team member added");
+        }
       }
       router.refresh();
       onClose();
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleInviteExisting() {
+    if (!person?.email) return;
+    setInvitingExisting(true);
+    try {
+      await inviteTeamMember(person.email);
+      toast("Invite email sent");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to send invite");
+    } finally {
+      setInvitingExisting(false);
     }
   }
 
@@ -107,7 +131,15 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
       {error && <div className="form-error">{error}</div>}
       {!person && (
         <div className="hint-banner">
-          This creates their profile. To let them sign in, invite them via Supabase Dashboard → Authentication → Users, using this exact email — their login links to this profile automatically.
+          This creates their profile and, if you leave the box below checked, emails them an invite to set up their portal login — no extra steps needed.
+        </div>
+      )}
+      {person && !person.auth_user_id && (
+        <div className="hint-banner" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <span>This person hasn&apos;t logged in yet — they have no portal access.</span>
+          <Button variant="ghost" size="sm" onClick={handleInviteExisting} disabled={invitingExisting || !person.email}>
+            {invitingExisting ? "Sending…" : "Send invite"}
+          </Button>
         </div>
       )}
       <div className="field-row">
@@ -118,6 +150,12 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
         <div className="field">
           <label>Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@dieminnovate.com" />
+          {!person && email.trim() && (
+            <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 12, fontWeight: 500, color: "var(--ink-soft)" }}>
+              <input type="checkbox" checked={sendInvite} onChange={(e) => setSendInvite(e.target.checked)} />
+              Send them a portal invite email
+            </label>
+          )}
         </div>
       </div>
       <div className="field-row">
