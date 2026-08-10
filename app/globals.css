@@ -77,16 +77,9 @@ input,select,textarea{font-family:inherit;}
 ::-webkit-scrollbar-track{background:transparent;}
 
 /* ================= DIEM MARK ================= */
-.diem-mark{width:30px; height:30px; border-radius:9px; position:relative; flex-shrink:0; overflow:hidden; background:var(--diem-black);}
-.diem-mark i{position:absolute; width:52%; height:52%; border-radius:3px;}
-.diem-mark i:nth-child(1){top:0; left:0; background:var(--diem-orange);}
-.diem-mark i:nth-child(2){top:0; right:0; background:var(--diem-blue);}
-.diem-mark i:nth-child(3){bottom:0; left:0; background:var(--diem-yellow);}
-.diem-mark i:nth-child(4){bottom:0; right:0; background:var(--diem-teal);}
-.diem-mark.lg{width:52px; height:52px; border-radius:15px;}
 .diem-wordmark{display:flex; align-items:center; gap:11px;}
-.diem-wordmark .wm-text{font-family:var(--font-sans),system-ui,sans-serif; font-weight:700; font-size:19px; letter-spacing:0.005em;}
-.diem-wordmark.lg .wm-text{font-size:28px;}
+.diem-wordmark .wm-text{font-family:var(--font-sans),system-ui,sans-serif; font-weight:600; font-size:19px; letter-spacing:0.06em; color:var(--diem-black);}
+.diem-wordmark.lg .wm-text{font-size:30px;}
 .diem-wordmark .wm-sub{color:var(--ink-soft); font-size:12px; font-weight:500;}
 
 /* ================= LOGIN ================= */

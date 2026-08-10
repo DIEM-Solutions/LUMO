@@ -10,20 +10,14 @@ export default function Icon() {
         style={{
           width: "100%",
           height: "100%",
-          background: "#14131B",
+          background: "#fff",
           borderRadius: 9,
           display: "flex",
-          flexWrap: "wrap",
-          alignContent: "center",
+          alignItems: "center",
           justifyContent: "center",
-          padding: 4,
-          gap: 2,
         }}
       >
-        <div style={{ width: 11, height: 11, borderRadius: 3, background: "#FF4F14" }} />
-        <div style={{ width: 11, height: 11, borderRadius: 3, background: "#4747F2" }} />
-        <div style={{ width: 11, height: 11, borderRadius: 3, background: "#FFCD77" }} />
-        <div style={{ width: 11, height: 11, borderRadius: 3, background: "#00BA9E" }} />
+        <span style={{ fontFamily: "sans-serif", fontWeight: 700, fontSize: 22, color: "#14131B" }}>D</span>
       </div>
     ),
     { ...size }

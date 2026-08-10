@@ -46,12 +46,6 @@ export function Sidebar({ person }: { person: Person | null }) {
           </svg>
         </button>
         <div className="diem-wordmark">
-          <div className="diem-mark">
-            <i />
-            <i />
-            <i />
-            <i />
-          </div>
           <span className="wm-text">DIEM</span>
         </div>
       </div>

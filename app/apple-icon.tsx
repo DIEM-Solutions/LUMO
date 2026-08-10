@@ -10,20 +10,14 @@ export default function AppleIcon() {
         style={{
           width: "100%",
           height: "100%",
-          background: "#14131B",
+          background: "#fff",
           borderRadius: 40,
           display: "flex",
-          flexWrap: "wrap",
-          alignContent: "center",
+          alignItems: "center",
           justifyContent: "center",
-          padding: 24,
-          gap: 12,
         }}
       >
-        <div style={{ width: 60, height: 60, borderRadius: 16, background: "#FF4F14" }} />
-        <div style={{ width: 60, height: 60, borderRadius: 16, background: "#4747F2" }} />
-        <div style={{ width: 60, height: 60, borderRadius: 16, background: "#FFCD77" }} />
-        <div style={{ width: 60, height: 60, borderRadius: 16, background: "#00BA9E" }} />
+        <span style={{ fontFamily: "sans-serif", fontWeight: 700, fontSize: 120, color: "#14131B" }}>D</span>
       </div>
     ),
     { ...size }

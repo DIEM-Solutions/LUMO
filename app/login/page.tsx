@@ -35,12 +35,6 @@ export default function LoginPage() {
     <div id="loginScreen">
       <form className="login-card" onSubmit={handleLogin}>
         <div className="diem-wordmark lg">
-          <div className="diem-mark lg">
-            <i />
-            <i />
-            <i />
-            <i />
-          </div>
           <span className="wm-text">DIEM</span>
         </div>
 
