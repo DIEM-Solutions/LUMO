@@ -72,6 +72,7 @@ export type Project = {
 };
 
 export type TaskStatus = "not-started" | "in-progress" | "done" | "blocked";
+export type TaskStatusLabels = Partial<Record<TaskStatus, string>>;
 export type ApprovalDecision = {
   status: "approved" | "rejected" | "info-requested";
   comment: string;
@@ -239,6 +240,7 @@ export type AppSettings = {
   project_categories: string[];
   document_tags: string[];
   branding: PortalBranding;
+  task_status_labels: TaskStatusLabels;
 };
 
 export type PublicHoliday = {

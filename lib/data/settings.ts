@@ -10,6 +10,7 @@ const FALLBACK_SETTINGS: AppSettings = {
   project_categories: [],
   document_tags: [],
   branding: {},
+  task_status_labels: {},
 };
 
 export async function loadAppSettings(): Promise<AppSettings> {
@@ -24,6 +25,7 @@ export async function loadAppSettings(): Promise<AppSettings> {
     project_categories: data.project_categories ?? [],
     document_tags: data.document_tags ?? [],
     branding: data.branding ?? {},
+    task_status_labels: data.task_status_labels ?? {},
   };
 }
 

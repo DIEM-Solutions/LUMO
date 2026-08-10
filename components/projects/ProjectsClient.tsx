@@ -9,7 +9,7 @@ import { MatrixTable } from "./MatrixTable";
 import { KanbanBoard } from "./KanbanBoard";
 import { ProjectModal } from "./ProjectModal";
 import { TaskModal } from "./TaskModal";
-import type { HealthValue, Task, TaskStatus, WorkloadThresholds } from "@/lib/types";
+import type { HealthValue, Task, TaskStatus, TaskStatusLabels, WorkloadThresholds } from "@/lib/types";
 
 type Subtab = "overview" | "matrix" | "kanban";
 
@@ -18,11 +18,13 @@ export function ProjectsClient({
   canCreateProjects,
   thresholds,
   projectCategories,
+  taskStatusLabels,
 }: {
   data: PortalData;
   canCreateProjects: boolean;
   thresholds: WorkloadThresholds;
   projectCategories: string[];
+  taskStatusLabels: TaskStatusLabels;
 }) {
   const store = useMemo(() => createStore(data), [data]);
 
@@ -193,6 +195,7 @@ export function ProjectsClient({
             setForceStatus("blocked");
             setTaskModalOpen(true);
           }}
+          statusLabels={taskStatusLabels}
         />
       )}
 
@@ -211,6 +214,7 @@ export function ProjectsClient({
           people={data.people}
           projects={data.projects}
           forceStatus={forceStatus}
+          statusLabels={taskStatusLabels}
         />
       )}
     </>

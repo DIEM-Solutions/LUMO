@@ -6,7 +6,14 @@ import { Card, Button } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
 import { addPublicHoliday, deletePublicHoliday, updateAppSettings } from "@/app/(portal)/settings/actions";
 import { fmt, fromISO } from "@/lib/domain/dates";
-import type { AppSettings, PublicHoliday } from "@/lib/types";
+import type { AppSettings, PublicHoliday, TaskStatus } from "@/lib/types";
+
+const STATUS_FIELDS: { key: TaskStatus; label: string; placeholder: string }[] = [
+  { key: "not-started", label: "Not started", placeholder: "Not started" },
+  { key: "in-progress", label: "In progress", placeholder: "In progress" },
+  { key: "blocked", label: "Blocked", placeholder: "Blocked" },
+  { key: "done", label: "Done", placeholder: "Done" },
+];
 
 const DAY_LABELS = [
   { value: 0, label: "Sun" },
@@ -80,6 +87,7 @@ export function WorkspaceSettingsPanel({ settings, holidays }: { settings: AppSe
   const [tags, setTags] = useState<string[]>(settings.document_tags);
   const [primaryColor, setPrimaryColor] = useState(settings.branding.primary_color ?? "");
   const [logoUrl, setLogoUrl] = useState(settings.branding.logo_url ?? "");
+  const [statusLabels, setStatusLabels] = useState(settings.task_status_labels);
   const [saving, setSaving] = useState(false);
 
   const [holidayDate, setHolidayDate] = useState("");
@@ -93,12 +101,18 @@ export function WorkspaceSettingsPanel({ settings, holidays }: { settings: AppSe
   async function handleSave() {
     setSaving(true);
     try {
+      const cleanedStatusLabels = Object.fromEntries(
+        Object.entries(statusLabels)
+          .map(([k, v]) => [k, (v ?? "").trim()])
+          .filter(([, v]) => v)
+      );
       await updateAppSettings({
         workloadThresholds: thresholds,
         workingDays,
         projectCategories: categories,
         documentTags: tags,
         branding: { primary_color: primaryColor.trim() || undefined, logo_url: logoUrl.trim() || undefined },
+        taskStatusLabels: cleanedStatusLabels,
       });
       toast("Workspace settings saved");
       router.refresh();
@@ -242,6 +256,39 @@ export function WorkspaceSettingsPanel({ settings, holidays }: { settings: AppSe
         <div className="section-title">Document tags</div>
         <div className="field-hint" style={{ marginBottom: 10 }}>Suggested tags offered when uploading a document.</div>
         <ChipListEditor items={tags} onChange={setTags} placeholder="Type a tag, press Enter…" />
+      </Card>
+
+      <Card>
+        <div className="section-title">Status configuration</div>
+        <div className="field-hint" style={{ marginBottom: 12 }}>
+          Rename how each task status displays across the portal (Kanban board, task editing). This only changes the label — how tasks move between statuses, and every health/capacity calculation, stays the same.
+        </div>
+        <div className="field-row">
+          {STATUS_FIELDS.slice(0, 2).map((f) => (
+            <div className="field" key={f.key}>
+              <label>{f.label}</label>
+              <input
+                type="text"
+                value={statusLabels[f.key] ?? ""}
+                onChange={(e) => setStatusLabels((s) => ({ ...s, [f.key]: e.target.value }))}
+                placeholder={f.placeholder}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="field-row">
+          {STATUS_FIELDS.slice(2, 4).map((f) => (
+            <div className="field" key={f.key}>
+              <label>{f.label}</label>
+              <input
+                type="text"
+                value={statusLabels[f.key] ?? ""}
+                onChange={(e) => setStatusLabels((s) => ({ ...s, [f.key]: e.target.value }))}
+                placeholder={f.placeholder}
+              />
+            </div>
+          ))}
+        </div>
       </Card>
 
       <Card>

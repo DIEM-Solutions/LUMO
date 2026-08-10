@@ -5,9 +5,17 @@ import { PlanningBoard } from "./PlanningBoard";
 import { CalendarView } from "./CalendarView";
 import { TaskModal } from "@/components/projects/TaskModal";
 import type { PortalData } from "@/lib/domain/store";
-import type { Task, WorkloadThresholds } from "@/lib/types";
+import type { Task, TaskStatusLabels, WorkloadThresholds } from "@/lib/types";
 
-export function PlanningClient({ data, thresholds }: { data: PortalData; thresholds: WorkloadThresholds }) {
+export function PlanningClient({
+  data,
+  thresholds,
+  taskStatusLabels,
+}: {
+  data: PortalData;
+  thresholds: WorkloadThresholds;
+  taskStatusLabels: TaskStatusLabels;
+}) {
   const [subtab, setSubtab] = useState<"planning" | "calendar">("planning");
   const [rangeDays, setRangeDays] = useState(14);
   const [personFilter, setPersonFilter] = useState("all");
@@ -79,6 +87,7 @@ export function PlanningClient({ data, thresholds }: { data: PortalData; thresho
           people={data.people}
           projects={data.projects}
           presetPersonId={presetPersonId}
+          statusLabels={taskStatusLabels}
         />
       )}
     </>

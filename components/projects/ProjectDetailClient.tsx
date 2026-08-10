@@ -21,18 +21,20 @@ import {
 } from "@/components/ui/primitives";
 import { ProjectModal } from "./ProjectModal";
 import { TaskModal } from "./TaskModal";
-import type { Task } from "@/lib/types";
+import type { Task, TaskStatusLabels } from "@/lib/types";
 
 export function ProjectDetailClient({
   data,
   projectId,
   canEdit,
   projectCategories,
+  taskStatusLabels,
 }: {
   data: PortalData;
   projectId: string;
   canEdit: boolean;
   projectCategories: string[];
+  taskStatusLabels: TaskStatusLabels;
 }) {
   const store = useMemo(() => createStore(data), [data]);
   const project = store.projectById(projectId)!;
@@ -136,7 +138,7 @@ export function ProjectDetailClient({
                         <Avatar person={assignee} size="sm" />
                         {assignee2 && <Avatar person={assignee2} size="sm" />}
                       </div>
-                      <TaskStatusPill status={tk.status} />
+                      <TaskStatusPill status={tk.status} labels={taskStatusLabels} />
                     </div>
                   </div>
                 </div>
@@ -195,6 +197,7 @@ export function ProjectDetailClient({
           people={data.people}
           projects={data.projects}
           presetProjectId={projectId}
+          statusLabels={taskStatusLabels}
         />
       )}
     </>

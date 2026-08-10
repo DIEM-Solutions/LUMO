@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentPerson, personPermissions } from "@/lib/auth/session";
 import { getSiteUrl } from "@/lib/site-url";
-import type { Permissions, PortalBranding, RoleType, WorkloadThresholds } from "@/lib/types";
+import type { Permissions, PortalBranding, RoleType, TaskStatusLabels, WorkloadThresholds } from "@/lib/types";
 
 function revalidateSettingsConsumers() {
   revalidatePath("/settings");
@@ -96,6 +96,7 @@ export type AppSettingsInput = {
   projectCategories: string[];
   documentTags: string[];
   branding: PortalBranding;
+  taskStatusLabels: TaskStatusLabels;
 };
 
 export async function updateAppSettings(input: AppSettingsInput) {
@@ -108,6 +109,7 @@ export async function updateAppSettings(input: AppSettingsInput) {
       project_categories: input.projectCategories,
       document_tags: input.documentTags,
       branding: input.branding,
+      task_status_labels: input.taskStatusLabels,
     })
     .eq("id", 1);
   if (error) throw new Error(error.message);

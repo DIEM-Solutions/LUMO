@@ -6,13 +6,20 @@ import { Avatar } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
 import { setTaskStatus } from "@/app/(portal)/projects/actions";
 import { dayDiff, fromISO, today } from "@/lib/domain/dates";
-import type { Person, Project, Task, TaskStatus } from "@/lib/types";
+import type { Person, Project, Task, TaskStatus, TaskStatusLabels } from "@/lib/types";
 
-const KANBAN_COLS: { status: TaskStatus; label: string; color: string }[] = [
-  { status: "not-started", label: "Not Started", color: "var(--stage-ns-fg)" },
-  { status: "in-progress", label: "In Progress", color: "var(--stage-prog-fg)" },
-  { status: "done", label: "Done", color: "var(--stage-done-fg)" },
-  { status: "blocked", label: "Blocked", color: "var(--health-blocked)" },
+const DEFAULT_STATUS_LABEL: Record<TaskStatus, string> = {
+  "not-started": "Not Started",
+  "in-progress": "In Progress",
+  done: "Done",
+  blocked: "Blocked",
+};
+
+const KANBAN_COL_META: { status: TaskStatus; color: string }[] = [
+  { status: "not-started", color: "var(--stage-ns-fg)" },
+  { status: "in-progress", color: "var(--stage-prog-fg)" },
+  { status: "done", color: "var(--stage-done-fg)" },
+  { status: "blocked", color: "var(--health-blocked)" },
 ];
 
 function dueLabel(due: Date) {
@@ -28,12 +35,14 @@ export function KanbanBoard({
   projects,
   onOpenTask,
   onNeedsBlockerReason,
+  statusLabels,
 }: {
   tasks: Task[];
   people: Person[];
   projects: Project[];
   onOpenTask: (task: Task) => void;
   onNeedsBlockerReason: (task: Task) => void;
+  statusLabels?: TaskStatusLabels;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -42,6 +51,8 @@ export function KanbanBoard({
 
   const personById = (id: string | null) => people.find((p) => p.id === id) ?? null;
   const projectById = (id: string) => projects.find((p) => p.id === id) ?? null;
+  const labelFor = (status: TaskStatus) => statusLabels?.[status] ?? DEFAULT_STATUS_LABEL[status];
+  const KANBAN_COLS = KANBAN_COL_META.map((c) => ({ ...c, label: labelFor(c.status) }));
 
   async function handleDrop(status: TaskStatus) {
     setDragOverCol(null);
@@ -52,7 +63,7 @@ export function KanbanBoard({
       return;
     }
     await setTaskStatus(task.id, status);
-    toast(`Moved to ${KANBAN_COLS.find((c) => c.status === status)?.label}`);
+    toast(`Moved to ${labelFor(status)}`);
     router.refresh();
   }
 

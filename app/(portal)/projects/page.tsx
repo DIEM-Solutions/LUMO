@@ -21,6 +21,7 @@ export default async function ProjectsPage() {
           canCreateProjects={perms.canCreateProjects}
           thresholds={settings.workload_thresholds}
           projectCategories={settings.project_categories}
+          taskStatusLabels={settings.task_status_labels}
         />
       </main>
     </>

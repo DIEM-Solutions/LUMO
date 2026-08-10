@@ -8,6 +8,7 @@ import type {
   ProjectType,
   Stage,
   TaskStatus,
+  TaskStatusLabels,
 } from "@/lib/types";
 
 export function initials(name: string) {
@@ -89,8 +90,8 @@ export function StagePill({ stage }: { stage: Stage }) {
   return <span className={`stage-pill ${stage}`}>{STAGE_LABEL[stage]}</span>;
 }
 
-export function TaskStatusPill({ status }: { status: TaskStatus }) {
-  return <span className={`task-status-pill ${status}`}>{STAGE_LABEL[status]}</span>;
+export function TaskStatusPill({ status, labels }: { status: TaskStatus; labels?: TaskStatusLabels }) {
+  return <span className={`task-status-pill ${status}`}>{labels?.[status] ?? STAGE_LABEL[status]}</span>;
 }
 
 const HEALTH_LABEL: Record<HealthValue, string> = {

@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
 import { createTask, deleteTask, updateTask } from "@/app/(portal)/projects/actions";
 import { addDays, toISO, today } from "@/lib/domain/dates";
-import type { Person, Priority, Project, Task, TaskStatus } from "@/lib/types";
+import type { Person, Priority, Project, Task, TaskStatus, TaskStatusLabels } from "@/lib/types";
 
-const STATUS_LABEL: Record<TaskStatus, string> = {
+const DEFAULT_STATUS_LABEL: Record<TaskStatus, string> = {
   "not-started": "Not started",
   "in-progress": "In Progress",
   done: "Done",
@@ -25,6 +25,7 @@ export function TaskModal({
   presetProjectId,
   presetPersonId,
   forceStatus,
+  statusLabels,
 }: {
   onClose: () => void;
   task: Task | null;
@@ -33,7 +34,14 @@ export function TaskModal({
   presetProjectId?: string;
   presetPersonId?: string;
   forceStatus?: TaskStatus;
+  statusLabels?: TaskStatusLabels;
 }) {
+  const STATUS_LABEL: Record<TaskStatus, string> = {
+    "not-started": statusLabels?.["not-started"] ?? DEFAULT_STATUS_LABEL["not-started"],
+    "in-progress": statusLabels?.["in-progress"] ?? DEFAULT_STATUS_LABEL["in-progress"],
+    done: statusLabels?.done ?? DEFAULT_STATUS_LABEL.done,
+    blocked: statusLabels?.blocked ?? DEFAULT_STATUS_LABEL.blocked,
+  };
   const router = useRouter();
   const toast = useToast();
 
