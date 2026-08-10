@@ -16,7 +16,12 @@ export default async function ProjectsPage() {
     <>
       <Topbar eyebrow="DIEM Portal" title="Projects & Tasks" />
       <main className="content">
-        <ProjectsClient data={data} canCreateProjects={perms.canCreateProjects} thresholds={settings.workload_thresholds} />
+        <ProjectsClient
+          data={data}
+          canCreateProjects={perms.canCreateProjects}
+          thresholds={settings.workload_thresholds}
+          projectCategories={settings.project_categories}
+        />
       </main>
     </>
   );

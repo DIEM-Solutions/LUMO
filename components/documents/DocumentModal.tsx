@@ -15,11 +15,13 @@ export function DocumentModal({
   document,
   projects,
   canDelete,
+  documentTags,
 }: {
   onClose: () => void;
   document: Document | null;
   projects: Project[];
   canDelete: boolean;
+  documentTags: string[];
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -62,6 +64,12 @@ export function DocumentModal({
     } finally {
       setSaving(false);
     }
+  }
+
+  function addTag(tag: string) {
+    const current = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
+    if (current.includes(tag)) return;
+    setTagsInput([...current, tag].join(", "));
   }
 
   async function handleDelete() {
@@ -137,6 +145,15 @@ export function DocumentModal({
         <div className="field">
           <label>Tags (comma-separated)</label>
           <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="e.g. handover, final" />
+          {documentTags.length > 0 && (
+            <div className="tag-chip-row" style={{ marginTop: 8 }}>
+              {documentTags.map((t) => (
+                <button type="button" key={t} className="tag-chip" style={{ cursor: "pointer", border: "none" }} onClick={() => addTag(t)}>
+                  + {t}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div className="field">

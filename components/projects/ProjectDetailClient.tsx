@@ -27,10 +27,12 @@ export function ProjectDetailClient({
   data,
   projectId,
   canEdit,
+  projectCategories,
 }: {
   data: PortalData;
   projectId: string;
   canEdit: boolean;
+  projectCategories: string[];
 }) {
   const store = useMemo(() => createStore(data), [data]);
   const project = store.projectById(projectId)!;
@@ -179,7 +181,12 @@ export function ProjectDetailClient({
       )}
 
       {projectModalOpen && (
-        <ProjectModal onClose={() => setProjectModalOpen(false)} project={project} people={data.people} />
+        <ProjectModal
+          onClose={() => setProjectModalOpen(false)}
+          project={project}
+          people={data.people}
+          projectCategories={projectCategories}
+        />
       )}
       {taskModalOpen && (
         <TaskModal

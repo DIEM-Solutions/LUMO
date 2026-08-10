@@ -13,10 +13,12 @@ export function ProjectModal({
   onClose,
   project,
   people,
+  projectCategories,
 }: {
   onClose: () => void;
   project: Project | null;
   people: Person[];
+  projectCategories: string[];
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -111,7 +113,19 @@ export function ProjectModal({
         </div>
         <div className="field">
           <label>{type === "client" ? "Client name" : "Internal category"}</label>
-          <input type="text" value={clientOrCategory} onChange={(e) => setClientOrCategory(e.target.value)} />
+          <input
+            type="text"
+            value={clientOrCategory}
+            onChange={(e) => setClientOrCategory(e.target.value)}
+            list={type === "internal" && projectCategories.length ? "project-categories" : undefined}
+          />
+          {type === "internal" && projectCategories.length > 0 && (
+            <datalist id="project-categories">
+              {projectCategories.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+          )}
         </div>
       </div>
       <div className="field-row">

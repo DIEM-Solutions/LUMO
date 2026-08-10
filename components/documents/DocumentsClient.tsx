@@ -11,10 +11,12 @@ export function DocumentsClient({
   documents,
   projects,
   canUpload,
+  documentTags,
 }: {
   documents: Document[];
   projects: Project[];
   canUpload: boolean;
+  documentTags: string[];
 }) {
   const [search, setSearch] = useState("");
   const [projectFilter, setProjectFilter] = useState("all");
@@ -174,6 +176,7 @@ export function DocumentsClient({
           document={editingDoc}
           projects={projects}
           canDelete={canUpload}
+          documentTags={documentTags}
         />
       )}
     </>

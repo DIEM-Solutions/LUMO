@@ -17,10 +17,12 @@ export function ProjectsClient({
   data,
   canCreateProjects,
   thresholds,
+  projectCategories,
 }: {
   data: PortalData;
   canCreateProjects: boolean;
   thresholds: WorkloadThresholds;
+  projectCategories: string[];
 }) {
   const store = useMemo(() => createStore(data), [data]);
 
@@ -199,6 +201,7 @@ export function ProjectsClient({
           onClose={() => setProjectModalOpen(false)}
           project={editingProject}
           people={data.people}
+          projectCategories={projectCategories}
         />
       )}
       {taskModalOpen && (
