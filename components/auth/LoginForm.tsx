@@ -40,7 +40,7 @@ export function LoginForm({ logoUrl }: { logoUrl?: string | null }) {
         </div>
 
         <h1 className="login-title">Portal</h1>
-        <p className="login-sub">Sign in with your DIEM Innovate account.</p>
+        <p className="login-sub">Log in to your DIEM account.</p>
 
         <div className="field">
           <label htmlFor="email">Email</label>
