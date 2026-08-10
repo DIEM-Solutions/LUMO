@@ -1,5 +1,7 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Montserrat } from "next/font/google";
+import { loadAppSettings } from "@/lib/data/settings";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -19,17 +21,23 @@ export const metadata: Metadata = {
   description: "DIEM Innovate internal portal",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await loadAppSettings();
+  const primaryColor = settings.branding.primary_color;
+  const bodyStyle = primaryColor ? ({ "--brand-primary": primaryColor } as CSSProperties) : undefined;
+
   return (
     <html
       lang="en"
       className={`${montserrat.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col" style={bodyStyle}>
+        {children}
+      </body>
     </html>
   );
 }

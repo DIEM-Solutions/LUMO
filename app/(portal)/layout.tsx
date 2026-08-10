@@ -4,6 +4,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { UnlinkedAccount } from "@/components/auth/UnlinkedAccount";
 import { getCurrentPerson } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { loadAppSettings } from "@/lib/data/settings";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -15,7 +16,7 @@ export default async function PortalLayout({ children }: { children: React.React
     redirect("/login");
   }
 
-  const person = await getCurrentPerson();
+  const [person, settings] = await Promise.all([getCurrentPerson(), loadAppSettings()]);
 
   if (!person) {
     return <UnlinkedAccount email={user.email} />;
@@ -24,7 +25,7 @@ export default async function PortalLayout({ children }: { children: React.React
   return (
     <ToastProvider>
       <div id="appShell" className="active">
-        <Sidebar person={person} />
+        <Sidebar person={person} logoUrl={settings.branding.logo_url} />
         <div className="main-col">{children}</div>
       </div>
     </ToastProvider>

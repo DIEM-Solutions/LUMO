@@ -8,6 +8,7 @@
   --diem-yellow:#FFCD77;
   --diem-purple:#6456A6;
   --diem-black:#14131B;
+  --brand-primary:#1B1A27;
 
   /* ---- neutrals ---- */
   --bg:#F7F7FB;
@@ -78,8 +79,10 @@ input,select,textarea{font-family:inherit;}
 
 /* ================= DIEM MARK ================= */
 .diem-wordmark{display:flex; align-items:center; gap:11px;}
-.diem-wordmark .wm-text{font-family:var(--font-sans),system-ui,sans-serif; font-weight:600; font-size:19px; letter-spacing:0.06em; color:var(--diem-black);}
+.diem-wordmark .wm-text{font-family:var(--font-sans),system-ui,sans-serif; font-weight:600; font-size:19px; letter-spacing:0.06em; color:var(--brand-primary);}
 .diem-wordmark.lg .wm-text{font-size:30px;}
+.diem-logo-img{height:22px; width:auto; object-fit:contain;}
+.diem-logo-img.lg{height:34px;}
 .diem-wordmark .wm-sub{color:var(--ink-soft); font-size:12px; font-weight:500;}
 
 /* ================= LOGIN ================= */
@@ -124,7 +127,7 @@ input,select,textarea{font-family:inherit;}
 }
 .nav-item svg{flex-shrink:0; width:19px; height:19px;}
 .nav-item:hover{background:var(--bg-deep); color:var(--ink);}
-.nav-item.active{background:var(--ink); color:#fff;}
+.nav-item.active{background:var(--brand-primary); color:#fff;}
 .nav-badge{margin-left:auto; background:var(--diem-orange); color:#fff; font-size:10px; font-weight:800; border-radius:999px; min-width:17px; height:17px; padding:0 5px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
 .nav-item.active .nav-badge{background:#fff; color:var(--diem-orange);}
 .sidebar.collapsed .nav-badge{position:absolute; top:6px; right:10px; margin-left:0;}
@@ -163,8 +166,8 @@ main.content{padding:34px 44px 76px; max-width:1800px;}
 
 /* ================= BUTTONS ================= */
 .btn{border:none; border-radius:999px; padding:9px 17px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:7px;}
-.btn-primary{background:var(--ink); color:#fff;}
-.btn-primary:hover{background:#312F45;}
+.btn-primary{background:var(--brand-primary); color:#fff;}
+.btn-primary:hover{filter:brightness(0.88);}
 .btn-ghost{background:var(--bg-deep); color:var(--ink);}
 .btn-ghost:hover{background:#E4E4EF;}
 .btn-danger{background:var(--pri-high-bg); color:var(--health-blocked);}

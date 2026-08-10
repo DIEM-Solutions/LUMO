@@ -78,7 +78,7 @@ export function WorkspaceSettingsPanel({ settings, holidays }: { settings: AppSe
   const [workingDays, setWorkingDays] = useState<number[]>(settings.working_days);
   const [categories, setCategories] = useState<string[]>(settings.project_categories);
   const [tags, setTags] = useState<string[]>(settings.document_tags);
-  const [primaryColor, setPrimaryColor] = useState(settings.branding.primary_color ?? "#FF4F14");
+  const [primaryColor, setPrimaryColor] = useState(settings.branding.primary_color ?? "");
   const [logoUrl, setLogoUrl] = useState(settings.branding.logo_url ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -98,7 +98,7 @@ export function WorkspaceSettingsPanel({ settings, holidays }: { settings: AppSe
         workingDays,
         projectCategories: categories,
         documentTags: tags,
-        branding: { primary_color: primaryColor, logo_url: logoUrl.trim() || undefined },
+        branding: { primary_color: primaryColor.trim() || undefined, logo_url: logoUrl.trim() || undefined },
       });
       toast("Workspace settings saved");
       router.refresh();
@@ -248,13 +248,14 @@ export function WorkspaceSettingsPanel({ settings, holidays }: { settings: AppSe
         <div className="section-title">Portal branding</div>
         <div className="field-row">
           <div className="field">
-            <label>Primary color</label>
-            <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="#FF4F14" />
+            <label>Primary color (optional)</label>
+            <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="e.g. #1B1A27" />
+            <div className="field-hint">Colors primary buttons, the active sidebar item, and the DIEM wordmark. Leave blank to keep the default.</div>
           </div>
           <div className="field">
             <label>Logo URL (optional)</label>
             <input type="text" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…" />
-            <div className="field-hint">Leave blank to keep the default DIEM mark used across the portal today.</div>
+            <div className="field-hint">Replaces the DIEM wordmark on login and in the sidebar. Leave blank to keep the text wordmark.</div>
           </div>
         </div>
       </Card>

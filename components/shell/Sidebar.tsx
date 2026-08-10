@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon, type IconName } from "@/lib/icons";
 import { Avatar } from "@/components/ui/primitives";
+import { DiemWordmark } from "@/components/shell/DiemWordmark";
 import { createClient } from "@/lib/supabase/client";
 import type { Person } from "@/lib/types";
 
@@ -19,7 +20,7 @@ const SECTIONS: { href: string; label: string; icon: IconName }[] = [
   { href: "/settings", label: "Settings", icon: "settings" },
 ];
 
-export function Sidebar({ person }: { person: Person | null }) {
+export function Sidebar({ person, logoUrl }: { person: Person | null; logoUrl?: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
@@ -46,7 +47,7 @@ export function Sidebar({ person }: { person: Person | null }) {
           </svg>
         </button>
         <div className="diem-wordmark">
-          <span className="wm-text">DIEM</span>
+          <DiemWordmark logoUrl={logoUrl} />
         </div>
       </div>
 
