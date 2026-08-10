@@ -106,6 +106,52 @@ export function computeLoad(personId: string, store: Store): number {
   return load;
 }
 
+export type WindowLoad = {
+  pct: number | null;
+  band: CapacityBand | "unknown";
+};
+
+/**
+ * Forward-looking capacity for an arbitrary 14-day window (same window
+ * length as the live capacity calc, just shifted in time). Used for the
+ * Team page's capacity heat map. Deliberately ignores blocked/overdue/urgent
+ * flags that computeCapacity uses to bump today's status — those describe
+ * current state, not a future week's projected load.
+ */
+export function computeCapacityForWindow(
+  personId: string,
+  store: Store,
+  windowStart: Date,
+  thresholds: WorkloadThresholds = DEFAULT_WORKLOAD_THRESHOLDS
+): WindowLoad {
+  const person = store.personById(personId);
+  if (!person || person.capacity_baseline == null) return { pct: null, band: "unknown" };
+
+  const windowEnd = addDays(windowStart, PLANNING_WINDOW_DAYS - 1);
+  let load = 0;
+  store.data.tasks.forEach((tk) => {
+    if (!store.isAssignedTo(tk, personId) || tk.status === "done") return;
+    const roleFactor = tk.assignee_id === personId ? 1 : 0.5;
+    const statusFactor = tk.status === "blocked" ? 0.6 : 1;
+    const span = taskWorkingDays(tk);
+    const overlapDays = span.filter((d) => d >= windowStart && d <= windowEnd).length;
+    if (overlapDays > 0) load += overlapDays * roleFactor * statusFactor;
+  });
+
+  const offDays = dayOffDaysInWindow(personId, windowStart, windowEnd, store.data.dayOff);
+  const effectiveBaseline = Math.max(1, person.capacity_baseline - offDays);
+  const pct = round(clamp((load / effectiveBaseline) * 100, 0, 999));
+
+  let band: CapacityBand;
+  if (pct > thresholds.overloaded) band = "overloaded";
+  else if (pct >= thresholds.needsSupport) band = "needs-support";
+  else if (pct >= thresholds.almostFull) band = "almost-full";
+  else if (pct >= thresholds.balanced) band = "balanced";
+  else band = "available";
+
+  return { pct, band };
+}
+
 export type Capacity = {
   personId: string;
   load: number | null;

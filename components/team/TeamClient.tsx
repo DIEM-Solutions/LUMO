@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CAP_STATUS_LABEL, computeCapacity } from "@/lib/domain/capacity";
-import { addDays, clamp, fmt, fromISO, today } from "@/lib/domain/dates";
+import { CAP_STATUS_LABEL, computeCapacity, computeCapacityForWindow } from "@/lib/domain/capacity";
+import { addDays, clamp, fmt, fromISO, round, today } from "@/lib/domain/dates";
 import { computeStage } from "@/lib/domain/stage";
 import { createStore, type PortalData } from "@/lib/domain/store";
 import { generateRecommendations } from "@/lib/domain/recommendations";
@@ -19,6 +19,24 @@ function mainActiveProjectFor(personId: string, store: ReturnType<typeof createS
 }
 
 const PLANNING_WINDOW_DAYS = 14;
+
+const DISTRIBUTION_PALETTE = ["var(--diem-blue)", "var(--diem-teal)", "var(--diem-yellow)", "var(--diem-purple)", "var(--diem-orange)"];
+
+function workloadDistribution(personId: string, store: ReturnType<typeof createStore>, projectColor: Map<string, string>) {
+  const tasks = store.activeTasksForPerson(personId);
+  if (!tasks.length) return [];
+  const counts = new Map<string, number>();
+  tasks.forEach((tk) => counts.set(tk.project_id, (counts.get(tk.project_id) ?? 0) + 1));
+  const total = tasks.length;
+  return [...counts.entries()]
+    .map(([projectId, count]) => ({
+      projectId,
+      project: store.projectById(projectId),
+      pct: round((count / total) * 100),
+      color: projectColor.get(projectId) ?? "var(--ink-faint)",
+    }))
+    .sort((a, b) => b.pct - a.pct);
+}
 
 export function TeamClient({
   data,
@@ -68,6 +86,16 @@ export function TeamClient({
   );
   const canHelp = allRows.filter((r) => ["available", "balanced"].includes(r.cap.band));
 
+  const weeks34Start = addDays(windowStart, PLANNING_WINDOW_DAYS);
+  const heatmapRows = rows.map((r) => ({
+    person: r.person,
+    now: { pct: r.cap.pct, band: r.cap.band },
+    next: computeCapacityForWindow(r.person.id, store, weeks34Start, thresholds),
+  }));
+
+  const projectColor = new Map<string, string>();
+  data.projects.forEach((p, i) => projectColor.set(p.id, DISTRIBUTION_PALETTE[i % DISTRIBUTION_PALETTE.length]));
+
   return (
     <>
       <div className="kpi-row" style={{ marginBottom: 22 }}>
@@ -77,6 +105,34 @@ export function TeamClient({
           </div>
         ))}
       </div>
+
+      <Card className="heatmap-card">
+        <div className="panel-head-row">
+          <h2>Capacity heat map</h2>
+        </div>
+        <div className="field-hint" style={{ marginBottom: 12 }}>
+          Projected load for this 2-week window vs. the two weeks after — spot who&apos;s about to get overloaded before it happens.
+        </div>
+        <div className="heatmap-grid">
+          <div className="heatmap-head">Team member</div>
+          <div className="heatmap-head" style={{ justifyContent: "center" }}>This 2 weeks</div>
+          <div className="heatmap-head" style={{ justifyContent: "center" }}>Weeks 3–4</div>
+          {heatmapRows.map((r) => (
+            <div key={r.person.id} style={{ display: "contents" }}>
+              <div className="heatmap-person">
+                <Avatar person={r.person} size="sm" />
+                <span className="mp-name">{r.person.name}</span>
+              </div>
+              <div className={`heatmap-cell ${r.now.band}`}>
+                {r.now.pct != null ? `${r.now.pct}%` : "—"}
+              </div>
+              <div className={`heatmap-cell ${r.next.band}`}>
+                {r.next.pct != null ? `${r.next.pct}%` : "—"}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <div className="two-col">
         <div>
@@ -151,6 +207,36 @@ export function TeamClient({
           <Card>
             <div className="section-title">Smart recommendations</div>
             <RecommendationList recommendations={recs} emptyText="Workload looks well distributed across the team." />
+          </Card>
+          <Card>
+            <div className="panel-head-row">
+              <h2>Workload distribution</h2>
+            </div>
+            <div className="stack-gap" style={{ gap: 12 }}>
+              {rows.filter((r) => r.person.role_type !== "ceo").map((r) => {
+                const dist = workloadDistribution(r.person.id, store, projectColor);
+                return (
+                  <div key={r.person.id}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                      <Avatar person={r.person} size="sm" />
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>{r.person.name.split(" ")[0]}</span>
+                    </div>
+                    {dist.length ? (
+                      <div
+                        className="dist-bar"
+                        title={dist.map((d) => `${d.project?.name ?? "—"}: ${d.pct}%`).join(" · ")}
+                      >
+                        {dist.map((d) => (
+                          <div key={d.projectId} style={{ width: `${d.pct}%`, background: d.color }} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="dist-bar dist-bar-empty" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </Card>
           <Card>
             <div className="panel-head-row">
