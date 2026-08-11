@@ -33,6 +33,7 @@ export type Person = {
   manual_utilization: ManualUtilization | null;
   next_assessment_date: string | null;
   leave_balance_days: number;
+  birthday: string | null;
   created_at: string;
 };
 

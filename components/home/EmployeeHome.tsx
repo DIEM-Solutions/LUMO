@@ -149,29 +149,9 @@ export function EmployeeHome({
         <div className="stack-gap">
           <Card>
             <div className="panel-head-row">
-              <h2>My capacity</h2>
+              <h2>Recent activity</h2>
             </div>
-            <div className="cap-bar-lbl">
-              Capacity used: <b>{cap.pct != null ? `${cap.pct}%` : "—"}</b> — current 2-week workload
-            </div>
-            {cap.pct != null && (
-              <div className="capacity-bar-wrap" style={{ marginBottom: 8 }}>
-                <CapacityBar pct={clamp(cap.pct, 4, 100)} band={cap.band === "unknown" ? "available" : cap.band} />
-              </div>
-            )}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span className={`cap-status-pill ${cap.band}`}>{cap.label}</span>
-              <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>
-                {cap.activeTaskCount} active tasks · {cap.projectCount} projects
-              </span>
-            </div>
-            {cap.reasons.length > 0 && (
-              <div className="capacity-reasons" style={{ marginLeft: 0, marginTop: 10 }}>
-                {cap.reasons.map((r) => (
-                  <span className="reason-chip" key={r.tag}>{r.label}</span>
-                ))}
-              </div>
-            )}
+            <ActivityFeedList entries={activity} projects={store.data.projects} limit={6} />
           </Card>
           <Card>
             <div className="panel-head-row">
@@ -199,9 +179,29 @@ export function EmployeeHome({
           </Card>
           <Card>
             <div className="panel-head-row">
-              <h2>Recent activity</h2>
+              <h2>My capacity</h2>
             </div>
-            <ActivityFeedList entries={activity} projects={store.data.projects} limit={6} />
+            <div className="cap-bar-lbl">
+              Capacity used: <b>{cap.pct != null ? `${cap.pct}%` : "—"}</b> — current 2-week workload
+            </div>
+            {cap.pct != null && (
+              <div className="capacity-bar-wrap" style={{ marginBottom: 8 }}>
+                <CapacityBar pct={clamp(cap.pct, 4, 100)} band={cap.band === "unknown" ? "available" : cap.band} />
+              </div>
+            )}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span className={`cap-status-pill ${cap.band}`}>{cap.label}</span>
+              <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>
+                {cap.activeTaskCount} active tasks · {cap.projectCount} projects
+              </span>
+            </div>
+            {cap.reasons.length > 0 && (
+              <div className="capacity-reasons" style={{ marginLeft: 0, marginTop: 10 }}>
+                {cap.reasons.map((r) => (
+                  <span className="reason-chip" key={r.tag}>{r.label}</span>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       </div>

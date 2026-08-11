@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { dayOffOverlapsDate, taskWorkingDays } from "@/lib/domain/capacity";
 import { addDays, dayDiff, DOW_SHORT, fmt, fmtLong, MONTH_NAMES, today } from "@/lib/domain/dates";
+import { bySeniorityDesc } from "@/lib/domain/hierarchy";
 import { createStore, type PortalData } from "@/lib/domain/store";
 import type { DayOff, Task } from "@/lib/types";
 
@@ -30,6 +31,7 @@ export function CalendarView({
   onOpenTask: (task: Task) => void;
 }) {
   const store = createStore(data);
+  const planningRoster = store.calendarRoster().filter((p) => p.role_type !== "ceo").sort(bySeniorityDesc);
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [cursor, setCursor] = useState(today());
 
@@ -76,7 +78,7 @@ export function CalendarView({
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <select className="filter-select" value={personFilter} onChange={(e) => onPersonChange(e.target.value)}>
             <option value="all">All team members</option>
-            {store.calendarRoster().map((p) => (
+            {planningRoster.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>

@@ -2,6 +2,7 @@
 
 import { approvedDayOffOn, computeCapacity, taskWorkingDays } from "@/lib/domain/capacity";
 import { addDays, dayDiff, DOW_SHORT, fromISO, today } from "@/lib/domain/dates";
+import { bySeniorityDesc } from "@/lib/domain/hierarchy";
 import { createStore, type PortalData } from "@/lib/domain/store";
 import { Avatar } from "@/components/ui/primitives";
 import type { Person, Task, WorkloadThresholds } from "@/lib/types";
@@ -43,8 +44,9 @@ export function PlanningBoard({
   onAddTaskFor: (personId: string) => void;
 }) {
   const store = createStore(data);
+  const planningRoster = store.calendarRoster().filter((p) => p.role_type !== "ceo").sort(bySeniorityDesc);
   const selectedIds = [personFilter, compareFilter].filter((id) => id && id !== "all" && id !== "none");
-  const people: Person[] = selectedIds.length ? store.calendarRoster().filter((p) => selectedIds.includes(p.id)) : store.calendarRoster();
+  const people: Person[] = selectedIds.length ? planningRoster.filter((p) => selectedIds.includes(p.id)) : planningRoster;
   const days = Array.from({ length: rangeDays }, (_, i) => addDays(today(), i));
 
   return (
@@ -58,7 +60,7 @@ export function PlanningBoard({
         <div className="filter-sep" />
         <select className="filter-select" value={personFilter} onChange={(e) => onPersonChange(e.target.value)}>
           <option value="all">All team members</option>
-          {store.calendarRoster().map((p) => (
+          {planningRoster.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
             </option>
@@ -67,7 +69,7 @@ export function PlanningBoard({
         {personFilter !== "all" && (
           <select className="filter-select" value={compareFilter} onChange={(e) => onCompareChange(e.target.value)}>
             <option value="none">Compare with…</option>
-            {store.calendarRoster()
+            {planningRoster
               .filter((p) => p.id !== personFilter)
               .map((p) => (
                 <option key={p.id} value={p.id}>
@@ -112,11 +114,11 @@ export function PlanningBoard({
               <div key={person.id} style={{ display: "contents" }}>
                 <div className="plan-name-cell">
                   <Avatar person={person} />
-                  <div>
+                  <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
                     <span className="pn-name">{person.name}</span>
                     <span className="pn-role">{person.role}{cap && cap.pct != null ? ` · ${cap.pct}%` : ""}</span>
                   </div>
-                  <button className="icon-btn" title={`Add task for ${person.name}`} style={{ marginLeft: "auto" }} onClick={() => onAddTaskFor(person.id)}>
+                  <button className="icon-btn" title={`Add task for ${person.name}`} style={{ marginLeft: "auto", flexShrink: 0 }} onClick={() => onAddTaskFor(person.id)}>
                     +
                   </button>
                 </div>

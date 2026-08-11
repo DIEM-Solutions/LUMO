@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Person, Permissions } from "@/lib/types";
 
+const NO_PROJECT_CREATE_LEVELS = new Set(["Intern", "Junior Innovation Lead"]);
+
 export async function getCurrentPerson(): Promise<Person | null> {
   const supabase = await createClient();
   const {
@@ -51,12 +53,13 @@ export function personPermissions(person: Person | null): EffectivePermissions {
   }
 
   const p = person.permissions ?? {};
+  const canCreateProjects = !!p.canCreateProjects && !NO_PROJECT_CREATE_LEVELS.has(person.role ?? "");
   return {
     isAdmin: false,
-    canCreateProjects: !!p.canCreateProjects,
+    canCreateProjects,
     canEditTeam: !!p.canEditTeam,
     canFinalizeRecap: !!p.canFinalizeRecap,
-    canUploadDocuments: !!p.canUploadDocuments,
+    canUploadDocuments: true,
     canApproveDayOff: !!p.canApproveDayOff,
   };
 }

@@ -7,6 +7,17 @@ import { getCurrentPerson, personPermissions } from "@/lib/auth/session";
 import { getSiteUrl } from "@/lib/site-url";
 import type { Permissions, PortalBranding, RoleType, TaskStatusLabels, WorkloadThresholds } from "@/lib/types";
 
+const NO_PROJECT_CREATE_LEVELS = new Set(["Intern", "Junior Innovation Lead"]);
+
+function normalizePermissions(role: string, roleType: RoleType, permissions: Permissions): Permissions {
+  if (roleType !== "employee") return permissions;
+  return {
+    ...permissions,
+    canUploadDocuments: true,
+    canCreateProjects: NO_PROJECT_CREATE_LEVELS.has(role) ? false : permissions.canCreateProjects,
+  };
+}
+
 function revalidateSettingsConsumers() {
   revalidatePath("/settings");
   revalidatePath("/home");
@@ -26,6 +37,7 @@ export type PersonFormInput = {
   workingArrangement: string;
   leaveBalanceDays: number;
   nextAssessmentDate: string | null;
+  birthday: string | null;
   permissions: Permissions;
 };
 
@@ -40,7 +52,8 @@ export async function createPerson(input: PersonFormInput) {
     working_arrangement: input.workingArrangement || null,
     leave_balance_days: input.leaveBalanceDays,
     next_assessment_date: input.nextAssessmentDate,
-    permissions: input.permissions,
+    birthday: input.birthday,
+    permissions: normalizePermissions(input.role, input.roleType, input.permissions),
     active: true,
   });
   if (error) throw new Error(error.message);
@@ -61,7 +74,8 @@ export async function updatePerson(id: string, input: PersonFormInput) {
       working_arrangement: input.workingArrangement || null,
       leave_balance_days: input.leaveBalanceDays,
       next_assessment_date: input.nextAssessmentDate,
-      permissions: input.permissions,
+      birthday: input.birthday,
+      permissions: normalizePermissions(input.role, input.roleType, input.permissions),
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
@@ -130,4 +144,11 @@ export async function deletePublicHoliday(id: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/settings");
   revalidatePath("/dayoff");
+}
+
+export async function updateMyBirthday(birthday: string | null) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_my_birthday", { new_birthday: birthday });
+  if (error) throw new Error(error.message);
+  revalidatePath("/settings");
 }

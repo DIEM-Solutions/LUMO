@@ -655,6 +655,7 @@ main.content{padding:34px 44px 76px; max-width:1800px;}
 .change-sub{font-size:11px; color:var(--ink-soft); margin-top:1px;}
 
 /* ================= CEO HOME / EXECUTIVE DASHBOARD ================= */
+.home-greeting{font-size:14.5px; font-weight:600; color:var(--ink-soft); margin-bottom:22px;}
 .ceo-section{margin-bottom:38px;}
 .ceo-section:last-child{margin-bottom:0;}
 .ceo-section-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; gap:12px; flex-wrap:wrap;}

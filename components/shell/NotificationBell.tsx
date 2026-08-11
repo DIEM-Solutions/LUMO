@@ -6,6 +6,22 @@ import { ACTIVITY_ICON, relativeTime } from "@/components/activity/ActivityFeedL
 import { markAllNotificationsRead, markNotificationRead } from "@/app/(portal)/notifications/actions";
 import type { NotificationItem } from "@/lib/data/notifications";
 
+function hrefFor(item: NotificationItem): string {
+  switch (item.kind) {
+    case "task_completed":
+    case "task_created":
+    case "project_updated":
+      return item.project_id ? `/projects/${item.project_id}` : "/projects";
+    case "document_uploaded":
+      return "/documents";
+    case "dayoff_requested":
+    case "dayoff_decided":
+      return "/dayoff";
+    default:
+      return "/home";
+  }
+}
+
 export function NotificationBell({ items, projectNames }: { items: NotificationItem[]; projectNames: Record<string, string> }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -22,10 +38,12 @@ export function NotificationBell({ items, projectNames }: { items: NotificationI
   }, [open]);
 
   async function handleItemClick(item: NotificationItem) {
+    setOpen(false);
     if (item.unread) {
       await markNotificationRead(item.id);
-      router.refresh();
     }
+    router.push(hrefFor(item));
+    router.refresh();
   }
 
   async function handleMarkAllRead() {

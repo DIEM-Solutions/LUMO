@@ -10,18 +10,19 @@ import { buildRecapRows } from "@/lib/domain/recap";
 import { computeCapacity } from "@/lib/domain/capacity";
 import { portfolioStats } from "@/lib/domain/stats";
 import { loadAppSettings } from "@/lib/data/settings";
+import { loadDismissedAttentionKeys } from "@/lib/data/attention";
 
 export default async function RecapPage() {
   const person = await getCurrentPerson();
   if (!person) redirect("/login");
 
-  const [data, settings] = await Promise.all([loadPortalData(), loadAppSettings()]);
+  const [data, settings, dismissedKeys] = await Promise.all([loadPortalData(), loadAppSettings(), loadDismissedAttentionKeys()]);
   const store = createStore(data);
   const thresholds = settings.workload_thresholds;
 
   const stats = portfolioStats(store);
   const ceoId = data.people.find((p) => p.role_type === "ceo")?.id ?? null;
-  const attention = buildNeedsAttention(store, ceoId, thresholds);
+  const attention = buildNeedsAttention(store, ceoId, thresholds, dismissedKeys);
   const rows = buildRecapRows(store);
   const overloadedCount = store
     .capacityRoster()

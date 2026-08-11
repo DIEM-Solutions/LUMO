@@ -17,17 +17,19 @@ export function ExecutiveHome({
   ceoId,
   activity,
   thresholds,
+  dismissedKeys,
 }: {
   store: Store;
   ceoId: string | null;
   activity: ActivityLogEntry[];
   thresholds: WorkloadThresholds;
+  dismissedKeys: Set<string>;
 }) {
   const stats = portfolioStats(store);
   const capRows = store.capacityRoster().map((p) => ({ person: p, cap: computeCapacity(p.id, store, thresholds) }));
   const overloadedCount = capRows.filter((r) => r.cap.status === "overloaded").length;
   const overdueTasks = overdueTaskCount(store);
-  const attnItems = buildNeedsAttention(store, ceoId, thresholds);
+  const attnItems = buildNeedsAttention(store, ceoId, thresholds, dismissedKeys);
   const decisionsRequired = attnItems.filter((a) => a.kind === "approval").length;
   const criticalDeadlines = store.data.projects.filter((p) => {
     const tasks = store.tasksFor(p.id);
@@ -67,11 +69,20 @@ export function ExecutiveHome({
       </div>
 
       <div className="ceo-section">
+        <div className="panel-head-row">
+          <h2>Recent activity</h2>
+        </div>
+        <Card>
+          <ActivityFeedList entries={activity} projects={store.data.projects} limit={8} />
+        </Card>
+      </div>
+
+      <div className="ceo-section">
         <div className="ceo-section-head">
           <h2>CEO Priorities</h2>
           {attnItems.length > 0 && <span className="section-title" style={{ margin: 0 }}>{attnItems.length} item{attnItems.length === 1 ? "" : "s"}</span>}
         </div>
-        <NeedsAttentionCard items={attnItems} />
+        <NeedsAttentionCard items={attnItems} canDismiss />
       </div>
 
       <div className="ceo-section ceo-tri">
@@ -113,15 +124,6 @@ export function ExecutiveHome({
               <div className="empty-state">Nothing scheduled.</div>
             )}
           </div>
-        </Card>
-      </div>
-
-      <div className="ceo-section">
-        <div className="panel-head-row">
-          <h2>Recent activity</h2>
-        </div>
-        <Card>
-          <ActivityFeedList entries={activity} projects={store.data.projects} limit={8} />
         </Card>
       </div>
     </>

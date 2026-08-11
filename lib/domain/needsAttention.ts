@@ -11,6 +11,7 @@ export type NeedsAttentionItem = {
   severity: "critical" | "warning";
   kind: "project" | "person" | "approval";
   ref: string;
+  projectId?: string;
   title: string;
   why: string;
   impact: string;
@@ -27,7 +28,8 @@ const SEV_RANK: Record<string, number> = { critical: 0, warning: 1 };
 export function buildNeedsAttention(
   store: Store,
   ceoId: string | null,
-  thresholds?: WorkloadThresholds
+  thresholds?: WorkloadThresholds,
+  dismissedKeys?: Set<string>
 ): NeedsAttentionItem[] {
   const items: NeedsAttentionItem[] = [];
 
@@ -72,6 +74,7 @@ export function buildNeedsAttention(
         severity,
         kind: "project",
         ref: p.id,
+        projectId: p.id,
         title: p.name,
         why,
         impact: impact ?? "",
@@ -104,6 +107,7 @@ export function buildNeedsAttention(
           severity: s.overdue ? "critical" : "warning",
           kind: "approval",
           ref: s.id,
+          projectId: s.project,
           title: s.action,
           why: "Waiting for your approval",
           impact: proj ? proj.name : "",
@@ -112,5 +116,6 @@ export function buildNeedsAttention(
       });
   }
 
-  return items.sort((a, b) => SEV_RANK[a.severity] - SEV_RANK[b.severity]);
+  const visible = dismissedKeys ? items.filter((i) => !dismissedKeys.has(`${i.kind}:${i.ref}`)) : items;
+  return visible.sort((a, b) => SEV_RANK[a.severity] - SEV_RANK[b.severity]);
 }

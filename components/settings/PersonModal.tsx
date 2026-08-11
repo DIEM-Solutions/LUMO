@@ -6,15 +6,17 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
 import { createPerson, inviteTeamMember, setPersonActive, updatePerson } from "@/app/(portal)/settings/actions";
+import { JOB_LEVELS } from "@/lib/domain/hierarchy";
 import type { Permissions, Person, RoleType } from "@/lib/types";
 
 const PERMISSION_FIELDS: { key: keyof Permissions; label: string }[] = [
   { key: "canCreateProjects", label: "Create & delete projects" },
   { key: "canEditTeam", label: "Manage team & settings (admin)" },
   { key: "canFinalizeRecap", label: "Finalize weekly recap" },
-  { key: "canUploadDocuments", label: "Upload documents" },
   { key: "canApproveDayOff", label: "Approve day-off requests" },
 ];
+
+const NO_PROJECT_CREATE_LEVELS = new Set(["Intern", "Junior Innovation Lead"]);
 
 export function PersonModal({ onClose, person }: { onClose: () => void; person: Person | null }) {
   const router = useRouter();
@@ -28,6 +30,7 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
   const [workingArrangement, setWorkingArrangement] = useState(person?.working_arrangement ?? "Full-Time");
   const [leaveBalanceDays, setLeaveBalanceDays] = useState(person?.leave_balance_days ?? 15);
   const [nextAssessmentDate, setNextAssessmentDate] = useState(person?.next_assessment_date ?? "");
+  const [birthday, setBirthday] = useState(person?.birthday ?? "");
   const [permissions, setPermissions] = useState<Permissions>(person?.permissions ?? {});
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -53,6 +56,7 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
       workingArrangement: workingArrangement.trim(),
       leaveBalanceDays: Number(leaveBalanceDays) || 15,
       nextAssessmentDate: nextAssessmentDate || null,
+      birthday: birthday || null,
       permissions,
     };
     try {
@@ -161,7 +165,18 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
       <div className="field-row">
         <div className="field">
           <label>Job title</label>
-          <input type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. Innovation Lead" />
+          {roleType === "employee" ? (
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="">— Unassigned —</option>
+              {JOB_LEVELS.map((level) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. CEO, General Manager" />
+          )}
         </div>
         <div className="field">
           <label>Access level</label>
@@ -198,21 +213,35 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
           <input type="date" value={nextAssessmentDate} onChange={(e) => setNextAssessmentDate(e.target.value)} />
         </div>
       </div>
+      <div className="field-row">
+        <div className="field">
+          <label>Birthday (optional)</label>
+          <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
+        </div>
+        <div className="field" />
+      </div>
       {roleType === "employee" && (
         <div className="field">
           <label>Permissions</label>
           <div className="chip-select-row">
-            {PERMISSION_FIELDS.map((f) => (
-              <button
-                type="button"
-                key={f.key}
-                className={`chip-select${permissions[f.key] ? " checked" : ""}`}
-                onClick={() => togglePerm(f.key)}
-              >
-                {f.label}
-              </button>
-            ))}
+            {PERMISSION_FIELDS.map((f) => {
+              const locked = f.key === "canCreateProjects" && NO_PROJECT_CREATE_LEVELS.has(role);
+              return (
+                <button
+                  type="button"
+                  key={f.key}
+                  className={`chip-select${permissions[f.key] && !locked ? " checked" : ""}`}
+                  onClick={() => !locked && togglePerm(f.key)}
+                  disabled={locked}
+                  title={locked ? "Interns and Junior Innovation Leads can't create projects" : undefined}
+                  style={locked ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
           </div>
+          <div className="field-hint">Everyone can upload documents by default.</div>
         </div>
       )}
     </Modal>

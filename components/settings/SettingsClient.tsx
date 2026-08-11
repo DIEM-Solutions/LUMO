@@ -1,7 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Avatar, Card } from "@/components/ui/primitives";
+import { Avatar, Button, Card } from "@/components/ui/primitives";
+import { useToast } from "@/components/ui/Toast";
+import { updateMyBirthday } from "@/app/(portal)/settings/actions";
 import { PersonModal } from "./PersonModal";
 import { WorkspaceSettingsPanel } from "./WorkspaceSettingsPanel";
 import type { AppSettings, Person, PublicHoliday } from "@/lib/types";
@@ -24,6 +27,21 @@ export function SettingsClient({
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [tab, setTab] = useState<"team" | "workspace">("team");
+  const router = useRouter();
+  const toast = useToast();
+  const [birthday, setBirthday] = useState(currentPerson.birthday ?? "");
+  const [savingBirthday, setSavingBirthday] = useState(false);
+
+  async function handleSaveBirthday() {
+    setSavingBirthday(true);
+    try {
+      await updateMyBirthday(birthday || null);
+      toast("Birthday saved");
+      router.refresh();
+    } finally {
+      setSavingBirthday(false);
+    }
+  }
 
   if (!isAdmin) {
     return (
@@ -53,6 +71,13 @@ export function SettingsClient({
               <span className="myproj-val">{currentPerson.leave_balance_days} days / year</span>
             </div>
           </div>
+          <div className="field" style={{ marginTop: 18, maxWidth: 240 }}>
+            <label>Birthday</label>
+            <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
+          </div>
+          <Button size="sm" onClick={handleSaveBirthday} disabled={savingBirthday || birthday === (currentPerson.birthday ?? "")} style={{ marginTop: 10 }}>
+            {savingBirthday ? "Saving…" : "Save birthday"}
+          </Button>
           <div className="field-hint" style={{ marginTop: 16 }}>
             Team management, roles, and permissions are handled by an admin — reach out if something here needs to change.
           </div>
