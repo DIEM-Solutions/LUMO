@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Avatar, Button, Card } from "@/components/ui/primitives";
@@ -78,6 +79,11 @@ export function SettingsClient({
           <Button size="sm" onClick={handleSaveBirthday} disabled={savingBirthday || birthday === (currentPerson.birthday ?? "")} style={{ marginTop: 10 }}>
             {savingBirthday ? "Saving…" : "Save birthday"}
           </Button>
+          <div style={{ marginTop: 18 }}>
+            <Link href="/settings/password" className="linklike" style={{ fontWeight: 700 }}>
+              Change password
+            </Link>
+          </div>
           <div className="field-hint" style={{ marginTop: 16 }}>
             Team management, roles, and permissions are handled by an admin — reach out if something here needs to change.
           </div>
@@ -90,17 +96,22 @@ export function SettingsClient({
     <>
       <div className="panel-head-row">
         <h2>Settings</h2>
-        {tab === "team" && (
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => {
-              setEditingPerson(null);
-              setModalOpen(true);
-            }}
-          >
-            + Add team member
-          </button>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link href="/settings/password" className="linklike" style={{ fontWeight: 700 }}>
+            Change password
+          </Link>
+          {tab === "team" && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                setEditingPerson(null);
+                setModalOpen(true);
+              }}
+            >
+              + Add team member
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="subtabs" style={{ marginBottom: 18 }}>
