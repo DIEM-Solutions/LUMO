@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPerson } from "@/lib/auth/session";
 import { logActivity } from "@/lib/data/activity";
-import type { Priority, ProjectType, TaskStatus } from "@/lib/types";
+import type { BlockerUrgency, Priority, ProjectType, TaskStatus } from "@/lib/types";
 
 function revalidateProjectViews() {
   revalidatePath("/projects");
@@ -12,6 +12,52 @@ function revalidateProjectViews() {
   revalidatePath("/planning");
   revalidatePath("/team");
   revalidatePath("/recap");
+}
+
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * Keeps the structured `blockers` table in sync with a task's own
+ * status/blocker_reason so a blocked task always has a matching,
+ * editable Blocker record — and so it auto-resolves the moment the
+ * task stops being blocked, instead of leaving a stale open blocker
+ * nobody can find or close.
+ */
+async function syncBlockerForTask(
+  supabase: SupabaseClient,
+  task: { id: string; project_id: string; name: string; status: TaskStatus; assignee_id: string | null; blocker_reason: string }
+) {
+  const { data: existing } = await supabase
+    .from("blockers")
+    .select("id")
+    .eq("related_task_id", task.id)
+    .eq("status", "open")
+    .maybeSingle();
+
+  if (task.status === "blocked") {
+    if (existing) {
+      await supabase
+        .from("blockers")
+        .update({ title: `Blocked: ${task.name}`, cause: task.blocker_reason || "" })
+        .eq("id", existing.id);
+    } else {
+      await supabase.from("blockers").insert({
+        project_id: task.project_id,
+        related_task_id: task.id,
+        title: `Blocked: ${task.name}`,
+        cause: task.blocker_reason || "",
+        impact: "",
+        owner_id: task.assignee_id,
+        urgency: "medium",
+        action_needed: "",
+        suggested_solution: "",
+        date_raised: new Date().toISOString().slice(0, 10),
+        status: "open",
+      });
+    }
+  } else if (existing) {
+    await supabase.from("blockers").update({ status: "resolved" }).eq("id", existing.id);
+  }
 }
 
 export type ProjectFormInput = {
@@ -144,6 +190,17 @@ export async function createTask(input: TaskFormInput) {
     .single();
   if (error) throw new Error(error.message);
 
+  if (data) {
+    await syncBlockerForTask(supabase, {
+      id: data.id,
+      project_id: input.projectId,
+      name: input.name,
+      status: input.status,
+      assignee_id: input.assigneeId,
+      blocker_reason: input.blockerReason,
+    });
+  }
+
   await logActivity({
     kind: "task_created",
     actorId: person?.id ?? null,
@@ -181,6 +238,15 @@ export async function updateTask(id: string, input: TaskFormInput) {
     .eq("id", id);
   if (error) throw new Error(error.message);
 
+  await syncBlockerForTask(supabase, {
+    id,
+    project_id: input.projectId,
+    name: input.name,
+    status: input.status,
+    assignee_id: input.assigneeId,
+    blocker_reason: input.blockerReason,
+  });
+
   if (input.status === "done") {
     await logActivity({
       kind: "task_completed",
@@ -203,8 +269,23 @@ export async function deleteTask(id: string) {
 export async function setTaskStatus(id: string, status: TaskStatus) {
   const supabase = await createClient();
   const person = await getCurrentPerson();
-  const { data } = await supabase.from("tasks").select("name, project_id").eq("id", id).maybeSingle();
+  const { data } = await supabase
+    .from("tasks")
+    .select("name, project_id, assignee_id, blocker_reason")
+    .eq("id", id)
+    .maybeSingle();
   await supabase.from("tasks").update({ status }).eq("id", id);
+
+  if (data) {
+    await syncBlockerForTask(supabase, {
+      id,
+      project_id: data.project_id,
+      name: data.name,
+      status,
+      assignee_id: data.assignee_id,
+      blocker_reason: data.blocker_reason ?? "",
+    });
+  }
 
   if (status === "done" && data) {
     await logActivity({
@@ -216,5 +297,45 @@ export async function setTaskStatus(id: string, status: TaskStatus) {
     });
   }
 
+  revalidateProjectViews();
+}
+
+export type BlockerFormInput = {
+  cause: string;
+  impact: string;
+  ownerId: string | null;
+  urgency: BlockerUrgency;
+  actionNeeded: string;
+  suggestedSolution: string;
+};
+
+export async function updateBlocker(id: string, input: BlockerFormInput) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("blockers")
+    .update({
+      cause: input.cause,
+      impact: input.impact,
+      owner_id: input.ownerId,
+      urgency: input.urgency,
+      action_needed: input.actionNeeded,
+      suggested_solution: input.suggestedSolution,
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateProjectViews();
+}
+
+export async function resolveBlocker(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("blockers").update({ status: "resolved" }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateProjectViews();
+}
+
+export async function reopenBlocker(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("blockers").update({ status: "open" }).eq("id", id);
+  if (error) throw new Error(error.message);
   revalidateProjectViews();
 }

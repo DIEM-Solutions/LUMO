@@ -582,7 +582,8 @@ main.content{padding:34px 44px 76px; max-width:1800px;}
 .rec-card .rc-text b{font-weight:700;}
 
 /* ---- blocker / risk cards ---- */
-.blocker-card{background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--health-blocked); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:19px 21px; margin-bottom:13px;}
+.blocker-card{background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--health-blocked); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:19px 21px; margin-bottom:13px; transition:box-shadow .15s ease, transform .15s ease;}
+.blocker-card:hover{box-shadow:var(--shadow-lift); transform:translateY(-1px);}
 .blocker-card.urgency-medium{border-left-color:var(--health-atrisk);}
 .blocker-card.urgency-low{border-left-color:var(--ink-faint);}
 .blocker-card.status-resolved{opacity:.55;}

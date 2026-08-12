@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/primitives";
 import { ProjectModal } from "./ProjectModal";
 import { TaskModal } from "./TaskModal";
-import type { Task, TaskStatusLabels } from "@/lib/types";
+import { BlockerModal } from "./BlockerModal";
+import type { Blocker, Task, TaskStatusLabels } from "@/lib/types";
 
 export function ProjectDetailClient({
   data,
@@ -50,6 +51,11 @@ export function ProjectDetailClient({
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingBlocker, setEditingBlocker] = useState<Blocker | null>(null);
+  const [showResolvedBlockers, setShowResolvedBlockers] = useState(false);
+
+  const openBlockers = blockers.filter((b) => b.status === "open");
+  const resolvedBlockers = blockers.filter((b) => b.status === "resolved");
 
   return (
     <>
@@ -152,12 +158,30 @@ export function ProjectDetailClient({
 
       {blockers.length > 0 && (
         <div className="section-block" style={{ marginTop: 24 }}>
-          <h2 style={{ fontSize: 18, marginBottom: 13 }}>Blockers</h2>
-          {blockers.map((b) => (
-            <div className={`blocker-card urgency-${b.urgency} status-${b.status}`} key={b.id}>
+          <div className="panel-head-row">
+            <h2 style={{ fontSize: 18 }}>Blockers</h2>
+            {resolvedBlockers.length > 0 && (
+              <button className="linklike" onClick={() => setShowResolvedBlockers((v) => !v)}>
+                {showResolvedBlockers ? "Hide" : "Show"} {resolvedBlockers.length} resolved
+              </button>
+            )}
+          </div>
+          {openBlockers.length === 0 && !showResolvedBlockers && (
+            <div className="empty-state">No open blockers on this project.</div>
+          )}
+          {(showResolvedBlockers ? blockers : openBlockers).map((b) => (
+            <div
+              className={`blocker-card urgency-${b.urgency} status-${b.status}`}
+              key={b.id}
+              style={{ cursor: "pointer" }}
+              onClick={() => setEditingBlocker(b)}
+            >
               <div className="blocker-head">
                 <div>
-                  <div className="blocker-title">{b.title}</div>
+                  <div className="blocker-title">
+                    {b.title}
+                    {b.status === "resolved" && <span style={{ marginLeft: 8, fontWeight: 600, fontSize: 11 }}>· Resolved</span>}
+                  </div>
                 </div>
                 <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700 }}>
                   <UrgencyDot urgency={b.urgency} /> {b.urgency}
@@ -177,6 +201,7 @@ export function ProjectDetailClient({
                   <div className="bf-val">{b.action_needed || "—"}</div>
                 </div>
               </div>
+              <div className="field-hint" style={{ marginTop: 8 }}>Click to edit or resolve</div>
             </div>
           ))}
         </div>
@@ -199,6 +224,9 @@ export function ProjectDetailClient({
           presetProjectId={projectId}
           statusLabels={taskStatusLabels}
         />
+      )}
+      {editingBlocker && (
+        <BlockerModal onClose={() => setEditingBlocker(null)} blocker={editingBlocker} people={data.people} />
       )}
     </>
   );
