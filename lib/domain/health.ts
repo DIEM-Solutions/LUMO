@@ -15,11 +15,13 @@ export function computeHealth(
   tasks: Task[],
   blockers: Blocker[]
 ): HealthValue {
+  const pct = projectProgress(project, tasks);
+  // All tasks actually done outranks any manual health flag — a fully
+  // finished project can't still be reported as at-risk or blocked.
+  if (pct >= 100) return "on-track";
   if (project.health_manual && project.health_manual.enabled) {
     return project.health_manual.value;
   }
-  const pct = projectProgress(project, tasks);
-  if (pct >= 100) return "on-track";
   const hasHighBlocker = openBlockersFor(project.id, blockers).some((b) => b.urgency === "high");
   if (projectHasBlockedTask(tasks) || hasHighBlocker) return "blocked";
   const end = project.end_date ? fromISO(project.end_date) : null;

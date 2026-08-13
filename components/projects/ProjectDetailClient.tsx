@@ -121,7 +121,7 @@ export function ProjectDetailClient({
             {project.start_date ? fmt(fromISO(project.start_date)) : "—"} → {project.end_date ? fmt(fromISO(project.end_date)) : "—"}
           </span>
         </div>
-        {project.next_deliverable && (
+        {project.next_deliverable && stage !== "done" && (
           <div className="pc-stat-row">
             <span className="pc-stat">🎯 Next: {project.next_deliverable}</span>
           </div>

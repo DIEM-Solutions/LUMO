@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { computeHealth, isProjectPastTargetDate, openBlockersFor } from "@/lib/domain/health";
 import { computeStage } from "@/lib/domain/stage";
-import { projectProgress } from "@/lib/domain/progress";
+import { computeAutoProgress, projectProgress } from "@/lib/domain/progress";
 import { fmt, fromISO } from "@/lib/domain/dates";
 import type { Store } from "@/lib/domain/store";
 import { AvatarStack, HealthFlag, PriorityTag, RunwayBar, StagePill, TypeTag } from "@/components/ui/primitives";
@@ -12,6 +12,7 @@ export function ProjectCard({ project: p, store }: { project: Project; store: St
   const stage = computeStage(p, tasks);
   const health = computeHealth(p, tasks, store.data.blockers);
   const pct = projectProgress(p, tasks);
+  const isManuallyAdjusted = !!p.progress_manual?.enabled && computeAutoProgress(tasks) < 100;
   const keyBlocker = openBlockersFor(p.id, store.data.blockers)[0];
   const pastTarget = isProjectPastTargetDate(p, tasks);
   const team = (p.team_ids ?? []).map((id) => store.personById(id)).filter(Boolean);
@@ -38,7 +39,7 @@ export function ProjectCard({ project: p, store }: { project: Project; store: St
         <div className="runway-labels">
           <span>Progress</span>
           <span className="pct">
-            {pct}%{p.progress_manual?.enabled && <span className="adjusted-tag" style={{ marginLeft: 4 }}>Adjusted</span>}
+            {pct}%{isManuallyAdjusted && <span className="adjusted-tag" style={{ marginLeft: 4 }}>Adjusted</span>}
           </span>
         </div>
         <RunwayBar pct={pct} stage={stage} />
@@ -52,7 +53,7 @@ export function ProjectCard({ project: p, store }: { project: Project; store: St
             </span>
           )}
         </span>
-        {p.next_deliverable && (
+        {p.next_deliverable && stage !== "done" && (
           <span title={p.next_deliverable}>
             🎯 {p.next_deliverable.length > 28 ? p.next_deliverable.slice(0, 28) + "…" : p.next_deliverable}
           </span>

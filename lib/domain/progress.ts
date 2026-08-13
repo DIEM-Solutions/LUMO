@@ -19,8 +19,12 @@ export function computeAutoProgress(tasks: Task[]): number {
 }
 
 export function projectProgress(project: Project, tasks: Task[]): number {
+  const auto = computeAutoProgress(tasks);
+  // All tasks actually done outranks any manual figure — a project can't be
+  // reported as anything less than 100% once there's no work left on it.
+  if (auto >= 100) return 100;
   if (project.progress_manual && project.progress_manual.enabled) {
     return clamp(project.progress_manual.value, 0, 100);
   }
-  return computeAutoProgress(tasks);
+  return auto;
 }
