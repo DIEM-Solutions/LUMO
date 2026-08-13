@@ -4,6 +4,33 @@ import type { ActivityLogEntry } from "@/lib/types";
 
 export type NotificationItem = ActivityLogEntry & { unread: boolean };
 
+export function notificationSectionHref(kind: ActivityLogEntry["kind"]): string | null {
+  switch (kind) {
+    case "task_completed":
+    case "task_created":
+    case "project_updated":
+      return "/projects";
+    case "document_uploaded":
+      return "/documents";
+    case "dayoff_requested":
+    case "dayoff_decided":
+      return "/dayoff";
+    default:
+      return null;
+  }
+}
+
+export function unreadCountsBySection(items: NotificationItem[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const item of items) {
+    if (!item.unread) continue;
+    const href = notificationSectionHref(item.kind);
+    if (!href) continue;
+    counts[href] = (counts[href] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export async function loadNotifications(limit = 20): Promise<NotificationItem[]> {
   const person = await getCurrentPerson();
   if (!person) return [];

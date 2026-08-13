@@ -117,10 +117,8 @@ input,select,textarea{font-family:inherit;}
 .burger-btn{
   width:34px; height:34px; border-radius:10px; background:none; border:none; cursor:pointer;
   display:flex; align-items:center; justify-content:center; color:var(--ink-soft); flex-shrink:0;
-  position:relative;
 }
 .burger-btn:hover{background:var(--bg-deep); color:var(--ink);}
-.burger-badge{position:absolute; top:-2px; right:-2px; background:var(--diem-orange); color:#fff; font-size:9.5px; font-weight:800; border-radius:999px; min-width:16px; height:16px; padding:0 4px; display:flex; align-items:center; justify-content:center; border:2px solid var(--surface);}
 .sidebar-nav{flex:1; padding:14px 12px; display:flex; flex-direction:column; gap:3px; overflow-y:auto;}
 .nav-item{
   display:flex; align-items:center; gap:13px; padding:11px 13px; border-radius:12px; cursor:pointer;

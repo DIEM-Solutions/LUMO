@@ -23,11 +23,11 @@ const SECTIONS: { href: string; label: string; icon: IconName }[] = [
 export function Sidebar({
   person,
   logoUrl,
-  unreadCount = 0,
+  unreadBySection = {},
 }: {
   person: Person | null;
   logoUrl?: string | null;
-  unreadCount?: number;
+  unreadBySection?: Record<string, number>;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -53,7 +53,6 @@ export function Sidebar({
           <svg viewBox="0 0 20 20" fill="none" width="19" height="19">
             <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
           </svg>
-          {unreadCount > 0 && <span className="burger-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}
         </button>
         <div className="diem-wordmark">
           <DiemWordmark logoUrl={logoUrl} />
@@ -64,6 +63,7 @@ export function Sidebar({
         {SECTIONS.map((s) => {
           const active = pathname?.startsWith(s.href);
           const label = s.label === "Home" && !isExec ? "My Workspace" : s.label;
+          const unread = unreadBySection[s.href] ?? 0;
           return (
             <Link
               key={s.href}
@@ -73,6 +73,7 @@ export function Sidebar({
             >
               <Icon name={s.icon} />
               <span className="nav-label">{label}</span>
+              {unread > 0 && <span className="nav-badge">{unread > 9 ? "9+" : unread}</span>}
             </Link>
           );
         })}
