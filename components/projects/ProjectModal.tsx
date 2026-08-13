@@ -31,6 +31,7 @@ export function ProjectModal({
   const [endDate, setEndDate] = useState(project?.end_date ?? toISO(addDays(today(), 60)));
   const [ownerId, setOwnerId] = useState(project?.owner_id ?? eligibleOwners[0]?.id ?? "");
   const [teamIds, setTeamIds] = useState<string[]>(project?.team_ids ?? []);
+  const [nextDeliverable, setNextDeliverable] = useState(project?.next_deliverable ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -44,7 +45,16 @@ export function ProjectModal({
       return;
     }
     setSaving(true);
-    const input = { name: name.trim(), type, clientOrCategory: clientOrCategory.trim(), startDate, endDate, ownerId, teamIds };
+    const input = {
+      name: name.trim(),
+      type,
+      clientOrCategory: clientOrCategory.trim(),
+      startDate,
+      endDate,
+      ownerId,
+      teamIds,
+      nextDeliverable: nextDeliverable.trim(),
+    };
     try {
       if (project) {
         await updateProject(project.id, input);
@@ -163,6 +173,16 @@ export function ProjectModal({
           ))}
         </div>
         <div className="field-hint">The owner is added automatically. Health and stage are calculated automatically from tasks.</div>
+      </div>
+      <div className="field">
+        <label>Next deliverable</label>
+        <input
+          type="text"
+          value={nextDeliverable}
+          onChange={(e) => setNextDeliverable(e.target.value)}
+          placeholder="What's the next thing due on this project?"
+        />
+        <div className="field-hint">Shown as the 🎯 next-step callout. Leave blank to hide it; it's also hidden automatically once the project is complete.</div>
       </div>
     </Modal>
   );
