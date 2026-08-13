@@ -5,6 +5,7 @@ import { UnlinkedAccount } from "@/components/auth/UnlinkedAccount";
 import { getCurrentPerson } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { loadAppSettings } from "@/lib/data/settings";
+import { loadNotifications } from "@/lib/data/notifications";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -16,16 +17,22 @@ export default async function PortalLayout({ children }: { children: React.React
     redirect("/login");
   }
 
-  const [person, settings] = await Promise.all([getCurrentPerson(), loadAppSettings()]);
+  const [person, settings, notifications] = await Promise.all([
+    getCurrentPerson(),
+    loadAppSettings(),
+    loadNotifications(),
+  ]);
 
   if (!person) {
     return <UnlinkedAccount email={user.email} />;
   }
 
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
   return (
     <ToastProvider>
       <div id="appShell" className="active">
-        <Sidebar person={person} logoUrl={settings.branding.logo_url} />
+        <Sidebar person={person} logoUrl={settings.branding.logo_url} unreadCount={unreadCount} />
         <div className="main-col">{children}</div>
       </div>
     </ToastProvider>

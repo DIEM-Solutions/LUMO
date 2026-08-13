@@ -20,7 +20,15 @@ const SECTIONS: { href: string; label: string; icon: IconName }[] = [
   { href: "/settings", label: "Settings", icon: "settings" },
 ];
 
-export function Sidebar({ person, logoUrl }: { person: Person | null; logoUrl?: string | null }) {
+export function Sidebar({
+  person,
+  logoUrl,
+  unreadCount = 0,
+}: {
+  person: Person | null;
+  logoUrl?: string | null;
+  unreadCount?: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
@@ -45,6 +53,7 @@ export function Sidebar({ person, logoUrl }: { person: Person | null; logoUrl?: 
           <svg viewBox="0 0 20 20" fill="none" width="19" height="19">
             <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
           </svg>
+          {unreadCount > 0 && <span className="burger-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}
         </button>
         <div className="diem-wordmark">
           <DiemWordmark logoUrl={logoUrl} />

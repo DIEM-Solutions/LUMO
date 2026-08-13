@@ -22,7 +22,8 @@ const KANBAN_COL_META: { status: TaskStatus; color: string }[] = [
   { status: "blocked", color: "var(--health-blocked)" },
 ];
 
-function dueLabel(due: Date) {
+function dueLabel(due: Date, status: TaskStatus) {
+  if (status === "done") return { text: "Completed", overdue: false };
   const d = dayDiff(today(), due);
   if (d < 0) return { text: `${-d}d overdue`, overdue: true };
   if (d === 0) return { text: "Due today", overdue: false };
@@ -96,7 +97,7 @@ export function KanbanBoard({
                 </div>
                 <div className="kanban-cards">
                   {colTasks.map((tk) => {
-                    const d = dueLabel(fromISO(tk.due_date));
+                    const d = dueLabel(fromISO(tk.due_date), tk.status);
                     const proj = projectById(tk.project_id);
                     return (
                       <div

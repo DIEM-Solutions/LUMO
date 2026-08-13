@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { computeHealth } from "@/lib/domain/health";
 import { projectProgress } from "@/lib/domain/progress";
@@ -22,7 +23,9 @@ import {
 import { ProjectModal } from "./ProjectModal";
 import { TaskModal } from "./TaskModal";
 import { BlockerModal } from "./BlockerModal";
-import type { Blocker, Task, TaskStatusLabels } from "@/lib/types";
+import { useToast } from "@/components/ui/Toast";
+import { setTaskStatus } from "@/app/(portal)/projects/actions";
+import type { Blocker, Task, TaskStatus, TaskStatusLabels } from "@/lib/types";
 
 export function ProjectDetailClient({
   data,
@@ -37,10 +40,13 @@ export function ProjectDetailClient({
   projectCategories: string[];
   taskStatusLabels: TaskStatusLabels;
 }) {
+  const router = useRouter();
+  const toast = useToast();
   const store = useMemo(() => createStore(data), [data]);
   const project = store.projectById(projectId)!;
   const tasks = store.tasksFor(projectId);
   const blockers = data.blockers.filter((b) => b.project_id === projectId);
+  const notedTasks = tasks.filter((tk) => tk.notes && tk.notes.trim().length > 0);
   const team = (project.team_ids ?? []).map((id) => store.personById(id)).filter(Boolean);
   const owner = store.personById(project.owner_id);
 
@@ -53,9 +59,28 @@ export function ProjectDetailClient({
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingBlocker, setEditingBlocker] = useState<Blocker | null>(null);
   const [showResolvedBlockers, setShowResolvedBlockers] = useState(false);
+  const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(new Set());
 
   const openBlockers = blockers.filter((b) => b.status === "open");
   const resolvedBlockers = blockers.filter((b) => b.status === "resolved");
+
+  async function handleToggleTaskDone(tk: Task, e: React.MouseEvent) {
+    e.stopPropagation();
+    const nextStatus: TaskStatus = tk.status === "done" ? "not-started" : "done";
+    setPendingTaskIds((s) => new Set(s).add(tk.id));
+    try {
+      await setTaskStatus(tk.id, nextStatus);
+      router.refresh();
+    } catch {
+      toast("Couldn't update task");
+    } finally {
+      setPendingTaskIds((s) => {
+        const next = new Set(s);
+        next.delete(tk.id);
+        return next;
+      });
+    }
+  }
 
   return (
     <>
@@ -133,10 +158,35 @@ export function ProjectDetailClient({
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{tk.name}</div>
-                      <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
-                        Due {fmt(fromISO(tk.due_date))} · {tk.weight}% weight
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <button
+                        type="button"
+                        className={`task-check${tk.status === "done" ? " checked" : ""}`}
+                        onClick={(e) => handleToggleTaskDone(tk, e)}
+                        disabled={pendingTaskIds.has(tk.id)}
+                        aria-label={tk.status === "done" ? "Mark as not started" : "Mark as complete"}
+                        title={tk.status === "done" ? "Mark as not started" : "Mark as complete"}
+                      >
+                        {tk.status === "done" && (
+                          <svg viewBox="0 0 16 16" width="11" height="11" fill="none">
+                            <path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
+                      <div>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 14,
+                            textDecoration: tk.status === "done" ? "line-through" : "none",
+                            opacity: tk.status === "done" ? 0.6 : 1,
+                          }}
+                        >
+                          {tk.name}
+                        </div>
+                        <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
+                          Due {fmt(fromISO(tk.due_date))} · {tk.weight}% weight
+                        </div>
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -155,6 +205,20 @@ export function ProjectDetailClient({
           <Card><div className="empty-state">No tasks yet.</div></Card>
         )}
       </div>
+
+      {notedTasks.length > 0 && (
+        <div className="section-block" style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 18 }}>Notes</h2>
+          <div className="stack-gap">
+            {notedTasks.map((tk) => (
+              <div className="card" key={tk.id}>
+                <div style={{ fontWeight: 700, fontSize: 13 }}>{tk.name}</div>
+                <div style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 6, whiteSpace: "pre-wrap" }}>{tk.notes}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {blockers.length > 0 && (
         <div className="section-block" style={{ marginTop: 24 }}>

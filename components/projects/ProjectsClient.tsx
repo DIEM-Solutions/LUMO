@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { computeHealth } from "@/lib/domain/health";
+import { computeStage } from "@/lib/domain/stage";
 import { createStore } from "@/lib/domain/store";
 import type { PortalData } from "@/lib/domain/store";
 import { ProjectCard } from "./ProjectCard";
@@ -11,7 +12,7 @@ import { ProjectModal } from "./ProjectModal";
 import { TaskModal } from "./TaskModal";
 import type { HealthValue, Task, TaskStatus, TaskStatusLabels, WorkloadThresholds } from "@/lib/types";
 
-type Subtab = "overview" | "matrix" | "kanban";
+type Subtab = "overview" | "matrix" | "kanban" | "completed";
 
 export function ProjectsClient({
   data,
@@ -54,8 +55,11 @@ export function ProjectsClient({
     healthCounts[computeHealth(p, store.tasksFor(p.id), data.blockers)]++;
   });
 
-  const client = filteredProjects.filter((p) => p.type === "client");
-  const internal = filteredProjects.filter((p) => p.type === "internal");
+  const activeProjects = filteredProjects.filter((p) => computeStage(p, store.tasksFor(p.id)) !== "done");
+  const completedProjects = filteredProjects.filter((p) => computeStage(p, store.tasksFor(p.id)) === "done");
+
+  const client = activeProjects.filter((p) => p.type === "client");
+  const internal = activeProjects.filter((p) => p.type === "internal");
 
   const kanbanTasks = data.tasks.filter((tk) => filteredProjects.some((p) => p.id === tk.project_id));
 
@@ -73,6 +77,9 @@ export function ProjectsClient({
           </button>
           <button className={`subtab-btn${subtab === "kanban" ? " active" : ""}`} onClick={() => setSubtab("kanban")}>
             Kanban
+          </button>
+          <button className={`subtab-btn${subtab === "completed" ? " active" : ""}`} onClick={() => setSubtab("completed")}>
+            Completed {completedProjects.length > 0 && <span className="cnt">{completedProjects.length}</span>}
           </button>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -135,7 +142,7 @@ export function ProjectsClient({
       </div>
 
       {subtab === "overview" &&
-        (filteredProjects.length ? (
+        (activeProjects.length ? (
           typeFilter === "all" ? (
             <>
               {client.length > 0 && (
@@ -169,7 +176,7 @@ export function ProjectsClient({
             </>
           ) : (
             <div className="card-grid">
-              {filteredProjects.map((p) => (
+              {activeProjects.map((p) => (
                 <ProjectCard project={p} store={store} key={p.id} />
               ))}
             </div>
@@ -179,6 +186,17 @@ export function ProjectsClient({
         ))}
 
       {subtab === "matrix" && <MatrixTable projects={filteredProjects} store={store} thresholds={thresholds} />}
+
+      {subtab === "completed" &&
+        (completedProjects.length ? (
+          <div className="card-grid">
+            {completedProjects.map((p) => (
+              <ProjectCard project={p} store={store} key={p.id} />
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">No completed projects yet.</div>
+        ))}
 
       {subtab === "kanban" && (
         <KanbanBoard
