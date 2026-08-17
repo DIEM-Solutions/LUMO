@@ -23,6 +23,7 @@ import {
 import { ProjectModal } from "./ProjectModal";
 import { TaskModal } from "./TaskModal";
 import { BlockerModal } from "./BlockerModal";
+import { MentionText } from "./MentionText";
 import { useToast } from "@/components/ui/Toast";
 import { setTaskStatus } from "@/app/(portal)/projects/actions";
 import type { Blocker, Task, TaskStatus, TaskStatusLabels } from "@/lib/types";
@@ -213,7 +214,9 @@ export function ProjectDetailClient({
             {notedTasks.map((tk) => (
               <div className="card" key={tk.id}>
                 <div style={{ fontWeight: 700, fontSize: 13 }}>{tk.name}</div>
-                <div style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 6, whiteSpace: "pre-wrap" }}>{tk.notes}</div>
+                <div style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 6, whiteSpace: "pre-wrap" }}>
+                  <MentionText text={tk.notes} people={data.people} />
+                </div>
               </div>
             ))}
           </div>

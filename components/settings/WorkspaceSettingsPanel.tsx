@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card, Button } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
-import { addPublicHoliday, deletePublicHoliday, updateAppSettings } from "@/app/(portal)/settings/actions";
+import { addPublicHoliday, deletePublicHoliday, removeBrandingLogo, updateAppSettings, uploadBrandingLogo } from "@/app/(portal)/settings/actions";
 import { fmt, fromISO } from "@/lib/domain/dates";
 import type { AppSettings, PublicHoliday, TaskStatus } from "@/lib/types";
 
@@ -89,6 +89,50 @@ export function WorkspaceSettingsPanel({ settings, holidays }: { settings: AppSe
   const [logoUrl, setLogoUrl] = useState(settings.branding.logo_url ?? "");
   const [statusLabels, setStatusLabels] = useState(settings.task_status_labels);
   const [saving, setSaving] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState("");
+
+  const colorIsValid = !primaryColor || /^#[0-9A-Fa-f]{6}$/.test(primaryColor.trim());
+
+  async function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setLogoError("");
+    if (!["image/png", "image/jpeg", "image/svg+xml", "image/webp"].includes(file.type)) {
+      setLogoError("Please choose a PNG, JPG, SVG, or WebP image.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoError("Logo must be smaller than 2MB.");
+      return;
+    }
+    setLogoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const url = await uploadBrandingLogo(formData);
+      setLogoUrl(url);
+      toast("Logo updated");
+      router.refresh();
+    } catch (err) {
+      setLogoError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
+  async function handleRemoveLogo() {
+    setLogoUploading(true);
+    try {
+      await removeBrandingLogo();
+      setLogoUrl("");
+      toast("Logo removed");
+      router.refresh();
+    } finally {
+      setLogoUploading(false);
+    }
+  }
 
   const [holidayDate, setHolidayDate] = useState("");
   const [holidayName, setHolidayName] = useState("");
@@ -99,6 +143,10 @@ export function WorkspaceSettingsPanel({ settings, holidays }: { settings: AppSe
   }
 
   async function handleSave() {
+    if (!colorIsValid) {
+      toast("Primary color must be a hex code like #1B1A27");
+      return;
+    }
     setSaving(true);
     try {
       const cleanedStatusLabels = Object.fromEntries(
@@ -296,13 +344,70 @@ export function WorkspaceSettingsPanel({ settings, holidays }: { settings: AppSe
         <div className="field-row">
           <div className="field">
             <label>Primary color (optional)</label>
-            <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="e.g. #1B1A27" />
-            <div className="field-hint">Colors primary buttons, the active sidebar item, and the DIEM wordmark. Leave blank to keep the default.</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span
+                aria-hidden
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  flexShrink: 0,
+                  border: "1px solid var(--border)",
+                  background: colorIsValid && primaryColor ? primaryColor : "var(--surface-alt)",
+                }}
+              />
+              <input
+                type="text"
+                value={primaryColor}
+                onChange={(e) => setPrimaryColor(e.target.value)}
+                placeholder="e.g. #1B1A27"
+                style={{ borderColor: colorIsValid ? undefined : "var(--diem-orange)" }}
+              />
+            </div>
+            <div className="field-hint">
+              {colorIsValid
+                ? "Colors primary buttons, the active sidebar item, and the DIEM wordmark. Leave blank to keep the default."
+                : "Enter a 6-digit hex code, e.g. #1B1A27."}
+            </div>
           </div>
           <div className="field">
-            <label>Logo URL (optional)</label>
-            <input type="text" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…" />
-            <div className="field-hint">Replaces the DIEM wordmark on login and in the sidebar. Leave blank to keep the text wordmark.</div>
+            <label>Logo (optional)</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 10,
+                  border: "1px solid var(--border)",
+                  background: "var(--surface-alt)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  overflow: "hidden",
+                }}
+              >
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                ) : (
+                  <span style={{ fontSize: 10.5, color: "var(--ink-faint)" }}>No logo</span>
+                )}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label className="btn btn-ghost btn-sm" style={{ cursor: "pointer", display: "inline-flex" }}>
+                  {logoUploading ? "Uploading…" : logoUrl ? "Replace logo" : "Upload logo"}
+                  <input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={handleLogoFile} disabled={logoUploading} style={{ display: "none" }} />
+                </label>
+                {logoUrl && (
+                  <button type="button" className="linklike" onClick={handleRemoveLogo} disabled={logoUploading} style={{ fontSize: 11.5 }}>
+                    Remove logo
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="field-hint">
+              {logoError || "PNG, JPG, SVG, or WebP, up to 2MB. Replaces the DIEM wordmark on login and in the sidebar."}
+            </div>
           </div>
         </div>
       </Card>

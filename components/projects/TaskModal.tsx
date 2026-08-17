@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
 import { createTask, deleteTask, updateTask } from "@/app/(portal)/projects/actions";
 import { addDays, toISO, today } from "@/lib/domain/dates";
+import { MentionTextarea } from "./MentionTextarea";
 import type { Person, Priority, Project, Task, TaskStatus, TaskStatusLabels } from "@/lib/types";
 
 const DEFAULT_STATUS_LABEL: Record<TaskStatus, string> = {
@@ -270,7 +271,7 @@ export function TaskModal({
       </div>
       <div className="field">
         <label>Notes</label>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any context worth logging" />
+        <MentionTextarea value={notes} onChange={setNotes} people={people} placeholder="Any context worth logging — type @ to mention someone" />
       </div>
     </Modal>
   );

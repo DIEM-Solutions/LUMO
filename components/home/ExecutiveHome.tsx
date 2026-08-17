@@ -2,7 +2,7 @@ import Link from "next/link";
 import { computeCapacity } from "@/lib/domain/capacity";
 import { dayDiff, fmt, fromISO, today } from "@/lib/domain/dates";
 import { computeHealth } from "@/lib/domain/health";
-import { buildNeedsAttention } from "@/lib/domain/needsAttention";
+import { buildCompanyOverview, buildNeedsAttention } from "@/lib/domain/needsAttention";
 import { computeStage } from "@/lib/domain/stage";
 import type { Store } from "@/lib/domain/store";
 import { overdueTaskCount, portfolioStats } from "@/lib/domain/stats";
@@ -30,6 +30,7 @@ export function ExecutiveHome({
   const overloadedCount = capRows.filter((r) => r.cap.status === "overloaded").length;
   const overdueTasks = overdueTaskCount(store);
   const attnItems = buildNeedsAttention(store, ceoId, thresholds, dismissedKeys);
+  const overviewItems = buildCompanyOverview(store, thresholds);
   const decisionsRequired = attnItems.filter((a) => a.kind === "approval").length;
   const criticalDeadlines = store.data.projects.filter((p) => {
     const tasks = store.tasksFor(p.id);
@@ -82,7 +83,17 @@ export function ExecutiveHome({
           <h2>CEO Priorities</h2>
           {attnItems.length > 0 && <span className="section-title" style={{ margin: 0 }}>{attnItems.length} item{attnItems.length === 1 ? "" : "s"}</span>}
         </div>
+        <div className="field-hint" style={{ marginBottom: 10 }}>What you personally need to know, review, decide, or act on.</div>
         <NeedsAttentionCard items={attnItems} canDismiss />
+      </div>
+
+      <div className="ceo-section">
+        <div className="ceo-section-head">
+          <h2>Company Overview</h2>
+          {overviewItems.length > 0 && <span className="section-title" style={{ margin: 0 }}>{overviewItems.length} item{overviewItems.length === 1 ? "" : "s"}</span>}
+        </div>
+        <div className="field-hint" style={{ marginBottom: 10 }}>Company-wide signals, regardless of your own involvement.</div>
+        <NeedsAttentionCard items={overviewItems} />
       </div>
 
       <div className="ceo-section ceo-tri">

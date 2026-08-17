@@ -5,9 +5,7 @@ import { CAP_STATUS_LABEL, computeCapacity, computeCapacityForWindow } from "@/l
 import { addDays, clamp, fmt, fromISO, round, today } from "@/lib/domain/dates";
 import { computeStage } from "@/lib/domain/stage";
 import { createStore, type PortalData } from "@/lib/domain/store";
-import { generateRecommendations } from "@/lib/domain/recommendations";
 import { Avatar, Card, CapacityBar, CapStatusPill, KpiCard } from "@/components/ui/primitives";
-import { RecommendationList } from "@/components/home/RecommendationCard";
 import type { CapacityBand, WorkloadThresholds } from "@/lib/types";
 
 function mainActiveProjectFor(personId: string, store: ReturnType<typeof createStore>) {
@@ -78,7 +76,6 @@ export function TeamClient({
     return true;
   });
 
-  const recs = generateRecommendations(store, null, thresholds);
   const windowStart = today();
   const windowEnd = addDays(windowStart, PLANNING_WINDOW_DAYS - 1);
   const absencesInWindow = data.dayOff.filter(
@@ -204,10 +201,6 @@ export function TeamClient({
           </Card>
         </div>
         <div className="stack-gap">
-          <Card>
-            <div className="section-title">Smart recommendations</div>
-            <RecommendationList recommendations={recs} emptyText="Workload looks well distributed across the team." />
-          </Card>
           <Card>
             <div className="panel-head-row">
               <h2>Workload distribution</h2>

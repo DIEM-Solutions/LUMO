@@ -3,11 +3,9 @@ import { computeCapacity } from "@/lib/domain/capacity";
 import { clamp, dayDiff, fromISO, today } from "@/lib/domain/dates";
 import { computeHealth } from "@/lib/domain/health";
 import { projectProgress } from "@/lib/domain/progress";
-import { generateRecommendations } from "@/lib/domain/recommendations";
 import { computeStage } from "@/lib/domain/stage";
 import type { Store } from "@/lib/domain/store";
 import { Card, CapacityBar, HealthFlag, KpiCard, RunwayBar, TypeTag } from "@/components/ui/primitives";
-import { RecommendationList } from "@/components/home/RecommendationCard";
 import { ActivityFeedList } from "@/components/activity/ActivityFeedList";
 import type { ActivityLogEntry, Project, Task, WorkloadThresholds } from "@/lib/types";
 
@@ -106,7 +104,6 @@ export function EmployeeHome({
   const dueTodayOrOverdue = myTasks.filter((tk) => dayDiff(today(), fromISO(tk.due_date)) <= 0);
   const myBlockedTasks = myTasks.filter((tk) => tk.status === "blocked");
   const cap = computeCapacity(personId, store, thresholds);
-  const recs = generateRecommendations(store, personId, thresholds);
   const summaries = myProjects
     .map((p) => employeeProjectSummary(personId, p, store))
     .sort((a, b) => {
@@ -172,10 +169,6 @@ export function EmployeeHome({
             ) : (
               <div className="empty-state">Nothing due soon.</div>
             )}
-          </Card>
-          <Card>
-            <div className="section-title">Recommended for you</div>
-            <RecommendationList recommendations={recs} emptyText="You're in good shape — no action needed." />
           </Card>
           <Card>
             <div className="panel-head-row">

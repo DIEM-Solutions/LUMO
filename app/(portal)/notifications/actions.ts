@@ -8,7 +8,8 @@ export async function markNotificationRead(activityId: string) {
   const person = await getCurrentPerson();
   if (!person) return;
   const supabase = await createClient();
-  await supabase.from("notification_reads").upsert({ person_id: person.id, activity_id: activityId });
+  const readAt = new Date().toISOString();
+  await supabase.from("notification_reads").upsert({ person_id: person.id, activity_id: activityId, read_at: readAt });
   revalidatePath("/", "layout");
 }
 
@@ -17,8 +18,9 @@ export async function markAllNotificationsRead(activityIds: string[]) {
   const person = await getCurrentPerson();
   if (!person) return;
   const supabase = await createClient();
+  const readAt = new Date().toISOString();
   await supabase
     .from("notification_reads")
-    .upsert(activityIds.map((activityId) => ({ person_id: person.id, activity_id: activityId })));
+    .upsert(activityIds.map((activityId) => ({ person_id: person.id, activity_id: activityId, read_at: readAt })));
   revalidatePath("/", "layout");
 }

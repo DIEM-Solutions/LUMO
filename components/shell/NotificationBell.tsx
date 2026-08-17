@@ -11,12 +11,19 @@ function hrefFor(item: NotificationItem): string {
     case "task_completed":
     case "task_created":
     case "project_updated":
+    case "task_assigned":
+    case "task_updated":
+    case "note_mention":
+    case "approval_requested":
+    case "team_changed":
       return item.project_id ? `/projects/${item.project_id}` : "/projects";
     case "document_uploaded":
       return "/documents";
     case "dayoff_requested":
     case "dayoff_decided":
       return "/dayoff";
+    case "support_request_updated":
+      return "/team";
     default:
       return "/home";
   }

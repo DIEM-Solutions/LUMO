@@ -39,12 +39,24 @@ export async function createDocument(input: DocumentFormInput) {
 
   if (error) throw new Error(error.message);
 
+  let recipientIds: string[] = [];
+  if (input.projectId) {
+    const [{ data: team }, { data: project }] = await Promise.all([
+      supabase.from("project_team").select("person_id").eq("project_id", input.projectId),
+      supabase.from("projects").select("owner_id").eq("id", input.projectId).maybeSingle(),
+    ]);
+    recipientIds = Array.from(
+      new Set([...(team ?? []).map((r) => r.person_id as string), project?.owner_id].filter((v): v is string => !!v))
+    );
+  }
+
   await logActivity({
     kind: "document_uploaded",
     actorId: person?.id ?? null,
     projectId: input.projectId,
     refId: data?.id ?? null,
     title: `${person?.name ?? "Someone"} added "${input.name}"`,
+    recipientIds,
   });
 
   revalidatePath("/documents");

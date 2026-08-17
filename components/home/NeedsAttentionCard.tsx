@@ -7,7 +7,7 @@ import { dismissAttentionItem } from "@/app/(portal)/home/actions";
 import type { NeedsAttentionItem } from "@/lib/domain/needsAttention";
 
 function hrefFor(item: NeedsAttentionItem): string {
-  if ((item.kind === "project" || item.kind === "approval") && item.projectId) {
+  if ((item.kind === "project" || item.kind === "approval" || item.kind === "task" || item.kind === "mention") && item.projectId) {
     return `/projects/${item.projectId}`;
   }
   if (item.kind === "person") return "/team";

@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { Topbar } from "@/components/shell/Topbar";
 import { Avatar } from "@/components/ui/primitives";
+import { NeedsAttentionCard } from "@/components/home/NeedsAttentionCard";
 import { getCurrentPerson } from "@/lib/auth/session";
 import { loadPortalData } from "@/lib/data/portal";
 import { createStore } from "@/lib/domain/store";
-import { dayDiff, fmt, fromISO, today } from "@/lib/domain/dates";
-import { buildNeedsAttention } from "@/lib/domain/needsAttention";
+import { fmt, fromISO } from "@/lib/domain/dates";
+import { buildCompanyOverview, buildNeedsAttention } from "@/lib/domain/needsAttention";
 import { buildRecapRows } from "@/lib/domain/recap";
-import { computeCapacity } from "@/lib/domain/capacity";
 import { portfolioStats } from "@/lib/domain/stats";
 import { loadAppSettings } from "@/lib/data/settings";
 import { loadDismissedAttentionKeys } from "@/lib/data/attention";
@@ -23,46 +23,14 @@ export default async function RecapPage() {
   const stats = portfolioStats(store);
   const ceoId = data.people.find((p) => p.role_type === "ceo")?.id ?? null;
   const attention = buildNeedsAttention(store, ceoId, thresholds, dismissedKeys);
+  const overview = buildCompanyOverview(store, thresholds);
   const rows = buildRecapRows(store);
-  const overloadedCount = store
-    .capacityRoster()
-    .filter((p) => computeCapacity(p.id, store, thresholds).status === "overloaded").length;
-
-  const highlights: string[] = [];
-  if (stats.healthCounts.blocked > 0) {
-    highlights.push(`${stats.healthCounts.blocked} project${stats.healthCounts.blocked === 1 ? " is" : "s are"} currently blocked.`);
-  }
-  if (stats.healthCounts["at-risk"] > 0) {
-    highlights.push(`${stats.healthCounts["at-risk"]} project${stats.healthCounts["at-risk"] === 1 ? " is" : "s are"} at risk of missing its deadline.`);
-  }
-  if (overloadedCount > 0) {
-    highlights.push(`${overloadedCount} team member${overloadedCount === 1 ? " is" : "s are"} overloaded and could use support.`);
-  }
-  const dueSoon = rows.filter((r) => r.dueDate).filter((r) => {
-    const diff = dayDiff(today(), fromISO(r.dueDate!));
-    return diff >= 0 && diff <= 14;
-  });
-  if (dueSoon.length > 0) {
-    highlights.push(`${dueSoon.length} project${dueSoon.length === 1 ? "" : "s"} due within the next two weeks.`);
-  }
-  if (!highlights.length) {
-    highlights.push("No blockers, at-risk projects, or overloaded team members this week — the portfolio is in good shape.");
-  }
 
   return (
     <>
       <Topbar eyebrow="DIEM Portal" title="Weekly Recap" />
       <main className="content">
-        <div className="recap-hero">
-          <div className="recap-hero-eyebrow">Executive summary</div>
-          <ul className="xr-summary-list">
-            {highlights.map((h, i) => (
-              <li key={i}>{h}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="xr-kpi-row" style={{ marginBottom: 30 }}>
+        <div className="xr-kpi-row" style={{ marginBottom: 24 }}>
           <div className="xr-kpi-card">
             <div className="xr-kpi-num">{stats.activeProjects}</div>
             <div className="xr-kpi-label">Active projects</div>
@@ -77,7 +45,26 @@ export default async function RecapPage() {
           </div>
           <div className="xr-kpi-card">
             <div className={`xr-kpi-num${attention.length ? " xr-warn" : ""}`}>{attention.length}</div>
-            <div className="xr-kpi-label">Needs attention</div>
+            <div className="xr-kpi-label">My priorities</div>
+          </div>
+        </div>
+
+        <div className="two-col" style={{ marginBottom: 24 }}>
+          <div>
+            <div className="panel-head-row">
+              <h2>My Priorities</h2>
+              {attention.length > 0 && <span className="section-title" style={{ margin: 0 }}>{attention.length} item{attention.length === 1 ? "" : "s"}</span>}
+            </div>
+            <div className="field-hint" style={{ marginBottom: 10 }}>What needs your review, decision, or action.</div>
+            <NeedsAttentionCard items={attention} />
+          </div>
+          <div>
+            <div className="panel-head-row">
+              <h2>Company Overview</h2>
+              {overview.length > 0 && <span className="section-title" style={{ margin: 0 }}>{overview.length} item{overview.length === 1 ? "" : "s"}</span>}
+            </div>
+            <div className="field-hint" style={{ marginBottom: 10 }}>Company-wide signals, regardless of your own involvement.</div>
+            <NeedsAttentionCard items={overview} />
           </div>
         </div>
 

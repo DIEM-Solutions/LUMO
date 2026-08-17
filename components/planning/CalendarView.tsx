@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { dayOffOverlapsDate, taskWorkingDays } from "@/lib/domain/capacity";
-import { addDays, dayDiff, DOW_SHORT, fmt, fmtLong, MONTH_NAMES, today } from "@/lib/domain/dates";
+import { addDays, dayDiff, DOW_SHORT, fmt, fmtLong, fromISO, MONTH_NAMES, today } from "@/lib/domain/dates";
 import { bySeniorityDesc } from "@/lib/domain/hierarchy";
 import { createStore, type PortalData } from "@/lib/domain/store";
-import type { DayOff, Task } from "@/lib/types";
+import type { DayOff, PublicHoliday, Task } from "@/lib/types";
 
 type ViewMode = "day" | "week" | "2weeks" | "month";
 
@@ -22,6 +22,7 @@ export function CalendarView({
   projectFilter,
   onProjectChange,
   onOpenTask,
+  holidays,
 }: {
   data: PortalData;
   personFilter: string;
@@ -29,6 +30,7 @@ export function CalendarView({
   projectFilter: string;
   onProjectChange: (id: string) => void;
   onOpenTask: (task: Task) => void;
+  holidays: PublicHoliday[];
 }) {
   const store = createStore(data);
   const planningRoster = store.calendarRoster().filter((p) => p.role_type !== "ceo").sort(bySeniorityDesc);
@@ -49,6 +51,10 @@ export function CalendarView({
     return data.dayOff.filter(
       (off) => off.status === "approved" && dayOffOverlapsDate(off, d) && (personFilter === "all" || off.person_id === personFilter)
     );
+  }
+
+  function holidayOnDay(d: Date): PublicHoliday | null {
+    return holidays.find((h) => dayDiff(fromISO(h.date), d) === 0) ?? null;
   }
 
   function step(dir: number) {
@@ -116,11 +122,17 @@ export function CalendarView({
             (d) => {
               const evs = tasksOnDay(d);
               const offs = dayOffOnDay(d);
+              const holiday = holidayOnDay(d);
               const isToday = dayDiff(today(), d) === 0;
               const other = d.getMonth() !== cursor.getMonth();
               return (
-                <div key={d.toISOString()} className={`cal-month-cell${other ? " other-month" : ""}${isToday ? " today" : ""}`} style={{ borderRight: "1px solid var(--border-soft)" }}>
+                <div key={d.toISOString()} className={`cal-month-cell${other ? " other-month" : ""}${isToday ? " today" : ""}${holiday ? " is-holiday" : ""}`} style={{ borderRight: "1px solid var(--border-soft)" }}>
                   <span className="cdate">{d.getDate()}</span>
+                  {holiday && (
+                    <div className="cal-event holiday" title={holiday.name}>
+                      🎌 {holiday.name}
+                    </div>
+                  )}
                   {offs.slice(0, 2).map((off) => (
                     <div className="cal-event dayoff" key={off.id} title={off.type ?? ""}>
                       🌴 {store.personById(off.person_id)?.name.split(" ")[0]}
@@ -150,18 +162,32 @@ export function CalendarView({
             return (
               <div key={w}>
                 <div className="cal-week-row" style={{ borderLeft: "1px solid var(--border-soft)" }}>
-                  {weekDays.map((d) => (
-                    <div key={d.toISOString()} className="cal-week-head" style={dayDiff(today(), d) === 0 ? { background: "var(--stage-prog-bg)" } : undefined}>
-                      <span className="dow">{DOW_SHORT[d.getDay()]}</span>
-                      <span className="dnum">{d.getDate()}</span>
-                    </div>
-                  ))}
+                  {weekDays.map((d) => {
+                    const holiday = holidayOnDay(d);
+                    return (
+                      <div
+                        key={d.toISOString()}
+                        className="cal-week-head"
+                        title={holiday?.name}
+                        style={holiday ? { background: "#E3F6F2" } : dayDiff(today(), d) === 0 ? { background: "var(--stage-prog-bg)" } : undefined}
+                      >
+                        <span className="dow">{DOW_SHORT[d.getDay()]}</span>
+                        <span className="dnum">{d.getDate()}</span>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="cal-week-row" style={{ borderLeft: "1px solid var(--border-soft)" }}>
                   {weekDays.map((d) => {
                     const evs = tasksOnDay(d);
+                    const holiday = holidayOnDay(d);
                     return (
                       <div key={d.toISOString()} className="cal-week-body">
+                        {holiday && (
+                          <div className="cal-event holiday" title={holiday.name} style={{ marginBottom: 4 }}>
+                            🎌 {holiday.name}
+                          </div>
+                        )}
                         {evs.length ? (
                           evs.map((tk) => {
                             const c = eventColor(tk.status);
@@ -189,6 +215,9 @@ export function CalendarView({
 
       {viewMode === "day" && (
         <div className="card">
+          {holidayOnDay(cursor) && (
+            <div className="cal-holiday-banner">🎌 {holidayOnDay(cursor)!.name} — public holiday</div>
+          )}
           {dayOffOnDay(cursor).map((off) => (
             <div className="priority-row" key={off.id}>
               <div className="pr-info">

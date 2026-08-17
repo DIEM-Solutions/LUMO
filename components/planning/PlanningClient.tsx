@@ -5,16 +5,18 @@ import { PlanningBoard } from "./PlanningBoard";
 import { CalendarView } from "./CalendarView";
 import { TaskModal } from "@/components/projects/TaskModal";
 import type { PortalData } from "@/lib/domain/store";
-import type { Task, TaskStatusLabels, WorkloadThresholds } from "@/lib/types";
+import type { PublicHoliday, Task, TaskStatusLabels, WorkloadThresholds } from "@/lib/types";
 
 export function PlanningClient({
   data,
   thresholds,
   taskStatusLabels,
+  holidays,
 }: {
   data: PortalData;
   thresholds: WorkloadThresholds;
   taskStatusLabels: TaskStatusLabels;
+  holidays: PublicHoliday[];
 }) {
   const [subtab, setSubtab] = useState<"planning" | "calendar">("planning");
   const [rangeDays, setRangeDays] = useState(14);
@@ -77,6 +79,7 @@ export function PlanningClient({
           projectFilter={projectFilter}
           onProjectChange={setProjectFilter}
           onOpenTask={openTask}
+          holidays={holidays}
         />
       )}
 

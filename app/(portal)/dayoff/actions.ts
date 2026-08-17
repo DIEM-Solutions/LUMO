@@ -42,11 +42,17 @@ export async function submitDayOff(input: DayOffRequestInput) {
 
   if (error) throw new Error(error.message);
 
+  const { data: approvers } = await supabase
+    .from("people")
+    .select("id")
+    .or("role_type.in.(ceo,admin),permissions->>canApproveDayOff.eq.true");
+
   await logActivity({
     kind: "dayoff_requested",
     actorId: person?.id ?? null,
     refId: data?.id ?? null,
     title: `${person?.name ?? "Someone"} requested ${input.type || "time off"}`,
+    recipientIds: (approvers ?? []).map((p) => p.id as string),
   });
 
   revalidatePath("/dayoff");
@@ -80,6 +86,7 @@ export async function decideDayOff(id: string, status: "approved" | "rejected", 
     refId: id,
     title: `${person?.name ?? "An admin"} ${status} a day-off request`,
     detail: data?.person_id ?? null,
+    recipientIds: data?.person_id ? [data.person_id as string] : [],
   });
 
   revalidatePath("/dayoff");

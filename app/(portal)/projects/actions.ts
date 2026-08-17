@@ -4,7 +4,45 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPerson } from "@/lib/auth/session";
 import { logActivity } from "@/lib/data/activity";
-import type { BlockerUrgency, Priority, ProjectType, TaskStatus } from "@/lib/types";
+import { fmt, fromISO } from "@/lib/domain/dates";
+import { parseMentionedIds } from "@/lib/domain/mentions";
+import type { BlockerUrgency, Person, Priority, ProjectType, TaskStatus } from "@/lib/types";
+
+async function allPeople(supabase: SupabaseClient): Promise<Person[]> {
+  const { data } = await supabase.from("people").select("*");
+  return (data ?? []) as Person[];
+}
+
+/**
+ * Notifies anyone newly @mentioned in a task's notes (compared against
+ * notes_mentioned_ids, so re-saving without new mentions doesn't
+ * re-notify), and persists the current mention set for next time.
+ */
+async function syncNoteMentions(
+  supabase: SupabaseClient,
+  task: { id: string; project_id: string; name: string; notes: string; notes_mentioned_ids?: string[] },
+  actorId: string | null,
+  actorName: string
+) {
+  const people = await allPeople(supabase);
+  const currentMentions = parseMentionedIds(task.notes, people);
+  const previouslyNotified = new Set(task.notes_mentioned_ids ?? []);
+  const newMentions = currentMentions.filter((id) => !previouslyNotified.has(id) && id !== actorId);
+
+  if (newMentions.length) {
+    const label = newMentions.map((id) => people.find((p) => p.id === id)?.name ?? "someone").join(" and ");
+    await logActivity({
+      kind: "note_mention",
+      actorId,
+      projectId: task.project_id,
+      refId: task.id,
+      title: `${actorName} mentioned ${label} in "${task.name}"`,
+      recipientIds: newMentions,
+    });
+  }
+
+  await supabase.from("tasks").update({ notes_mentioned_ids: currentMentions }).eq("id", task.id);
+}
 
 function revalidateProjectViews() {
   revalidatePath("/projects");
@@ -15,6 +53,18 @@ function revalidateProjectViews() {
 }
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * activity_log titles are shown both in someone's personal notification
+ * list AND in the general company-wide activity feed -- so they're always
+ * phrased in the third person ("Sara assigned X to Alex"), never "to you".
+ */
+async function namesFor(supabase: SupabaseClient, ids: (string | null | undefined)[]): Promise<Map<string, string>> {
+  const uniqueIds = Array.from(new Set(ids.filter((v): v is string => !!v)));
+  if (!uniqueIds.length) return new Map();
+  const { data } = await supabase.from("people").select("id, name").in("id", uniqueIds);
+  return new Map((data ?? []).map((p) => [p.id as string, p.name as string]));
+}
 
 /**
  * Keeps the structured `blockers` table in sync with a task's own
@@ -102,6 +152,7 @@ export async function createProject(input: ProjectFormInput) {
     projectId: project.id,
     refId: project.id,
     title: `${person?.name ?? "Someone"} created "${input.name}"`,
+    recipientIds: Array.from(team),
   });
 
   revalidateProjectViews();
@@ -113,6 +164,9 @@ export async function updateProject(id: string, input: ProjectFormInput) {
   const person = await getCurrentPerson();
   const team = new Set(input.teamIds);
   team.add(input.ownerId);
+
+  const { data: existingTeamRows } = await supabase.from("project_team").select("person_id").eq("project_id", id);
+  const oldTeam = new Set((existingTeamRows ?? []).map((r) => r.person_id as string));
 
   await supabase
     .from("projects")
@@ -132,12 +186,28 @@ export async function updateProject(id: string, input: ProjectFormInput) {
   await supabase.from("project_team").delete().eq("project_id", id);
   await supabase.from("project_team").insert(Array.from(team).map((person_id) => ({ project_id: id, person_id })));
 
+  const actorName = person?.name ?? "Someone";
+  const added = Array.from(team).filter((pid) => !oldTeam.has(pid));
+  const removed = Array.from(oldTeam).filter((pid) => !team.has(pid));
+
+  if (added.length || removed.length) {
+    await logActivity({
+      kind: "team_changed",
+      actorId: person?.id ?? null,
+      projectId: id,
+      refId: id,
+      title: `${actorName} changed the team on "${input.name}"`,
+      recipientIds: [...added, ...removed],
+    });
+  }
+
   await logActivity({
     kind: "project_updated",
     actorId: person?.id ?? null,
     projectId: id,
     refId: id,
-    title: `${person?.name ?? "Someone"} updated "${input.name}"`,
+    title: `${actorName} updated "${input.name}"`,
+    recipientIds: Array.from(team),
   });
 
   revalidateProjectViews();
@@ -202,14 +272,29 @@ export async function createTask(input: TaskFormInput) {
       assignee_id: input.assigneeId,
       blocker_reason: input.blockerReason,
     });
+
+    if (input.notes.trim()) {
+      await syncNoteMentions(
+        supabase,
+        { id: data.id, project_id: input.projectId, name: input.name, notes: input.notes, notes_mentioned_ids: [] },
+        person?.id ?? null,
+        person?.name ?? "Someone"
+      );
+    }
   }
 
+  const createRecipients = [input.assigneeId, input.assignee2Id].filter((v): v is string => !!v);
+  const createNames = await namesFor(supabase, createRecipients);
+  const assigneeLabel = createRecipients.map((id) => createNames.get(id) ?? "someone").join(" and ");
   await logActivity({
     kind: "task_created",
     actorId: person?.id ?? null,
     projectId: input.projectId,
     refId: data?.id ?? null,
-    title: `${person?.name ?? "Someone"} created "${input.name}"`,
+    title: assigneeLabel
+      ? `${person?.name ?? "Someone"} assigned "${input.name}" to ${assigneeLabel}`
+      : `${person?.name ?? "Someone"} created "${input.name}"`,
+    recipientIds: createRecipients,
   });
 
   revalidateProjectViews();
@@ -218,6 +303,8 @@ export async function createTask(input: TaskFormInput) {
 export async function updateTask(id: string, input: TaskFormInput) {
   const supabase = await createClient();
   const person = await getCurrentPerson();
+  const { data: existing } = await supabase.from("tasks").select("*").eq("id", id).maybeSingle();
+
   const { error } = await supabase
     .from("tasks")
     .update({
@@ -250,14 +337,72 @@ export async function updateTask(id: string, input: TaskFormInput) {
     blocker_reason: input.blockerReason,
   });
 
-  if (input.status === "done") {
-    await logActivity({
-      kind: "task_completed",
-      actorId: person?.id ?? null,
-      projectId: input.projectId,
-      refId: id,
-      title: `${person?.name ?? "Someone"} completed "${input.name}"`,
-    });
+  await syncNoteMentions(
+    supabase,
+    { id, project_id: input.projectId, name: input.name, notes: input.notes, notes_mentioned_ids: existing?.notes_mentioned_ids ?? [] },
+    person?.id ?? null,
+    person?.name ?? "Someone"
+  );
+
+  const actorName = person?.name ?? "Someone";
+  const assignees = [input.assigneeId, input.assignee2Id].filter((v): v is string => !!v);
+
+  if (existing) {
+    const wasAssignee = new Set([existing.assignee_id, existing.assignee2_id].filter(Boolean) as string[]);
+    const newlyAssigned = assignees.filter((a) => !wasAssignee.has(a));
+    if (newlyAssigned.length) {
+      const newNames = await namesFor(supabase, newlyAssigned);
+      const label = newlyAssigned.map((id) => newNames.get(id) ?? "someone").join(" and ");
+      await logActivity({
+        kind: "task_assigned",
+        actorId: person?.id ?? null,
+        projectId: input.projectId,
+        refId: id,
+        title: `${actorName} assigned "${input.name}" to ${label}`,
+        recipientIds: newlyAssigned,
+      });
+    }
+
+    if (input.status === "done" && existing.status !== "done") {
+      await logActivity({
+        kind: "task_completed",
+        actorId: person?.id ?? null,
+        projectId: input.projectId,
+        refId: id,
+        title: `${actorName} completed "${input.name}"`,
+        recipientIds: assignees,
+      });
+    } else {
+      const changes: string[] = [];
+      if (existing.due_date !== input.dueDate) changes.push(`due date → ${fmt(fromISO(input.dueDate))}`);
+      if (existing.priority !== input.priority) changes.push(`priority → ${input.priority}`);
+      if (existing.status !== input.status) changes.push(`status → ${input.status}`);
+      const remaining = assignees.filter((a) => !newlyAssigned.includes(a));
+      if (changes.length && remaining.length) {
+        await logActivity({
+          kind: "task_updated",
+          actorId: person?.id ?? null,
+          projectId: input.projectId,
+          refId: id,
+          title: `${actorName} updated "${input.name}"`,
+          detail: changes.join(", "),
+          recipientIds: remaining,
+        });
+      }
+    }
+
+    if (input.approvalPersonId && existing.approval_person_id !== input.approvalPersonId) {
+      const approverNames = await namesFor(supabase, [input.approvalPersonId]);
+      const approverName = approverNames.get(input.approvalPersonId) ?? "someone";
+      await logActivity({
+        kind: "approval_requested",
+        actorId: person?.id ?? null,
+        projectId: input.projectId,
+        refId: id,
+        title: `${actorName} needs ${approverName}'s approval on "${input.name}"`,
+        recipientIds: [input.approvalPersonId],
+      });
+    }
   }
 
   revalidateProjectViews();
@@ -274,7 +419,7 @@ export async function setTaskStatus(id: string, status: TaskStatus) {
   const person = await getCurrentPerson();
   const { data } = await supabase
     .from("tasks")
-    .select("name, project_id, assignee_id, blocker_reason")
+    .select("name, project_id, assignee_id, assignee2_id, blocker_reason, status")
     .eq("id", id)
     .maybeSingle();
   await supabase.from("tasks").update({ status }).eq("id", id);
@@ -288,16 +433,29 @@ export async function setTaskStatus(id: string, status: TaskStatus) {
       assignee_id: data.assignee_id,
       blocker_reason: data.blocker_reason ?? "",
     });
-  }
 
-  if (status === "done" && data) {
-    await logActivity({
-      kind: "task_completed",
-      actorId: person?.id ?? null,
-      projectId: data.project_id,
-      refId: id,
-      title: `${person?.name ?? "Someone"} completed "${data.name}"`,
-    });
+    const recipients = [data.assignee_id, data.assignee2_id].filter((v): v is string => !!v);
+    const actorName = person?.name ?? "Someone";
+    if (status === "done" && data.status !== "done") {
+      await logActivity({
+        kind: "task_completed",
+        actorId: person?.id ?? null,
+        projectId: data.project_id,
+        refId: id,
+        title: `${actorName} completed "${data.name}"`,
+        recipientIds: recipients,
+      });
+    } else if (data.status !== status && recipients.length) {
+      await logActivity({
+        kind: "task_updated",
+        actorId: person?.id ?? null,
+        projectId: data.project_id,
+        refId: id,
+        title: `${actorName} updated "${data.name}"`,
+        detail: `status → ${status}`,
+        recipientIds: recipients,
+      });
+    }
   }
 
   revalidateProjectViews();
@@ -312,8 +470,25 @@ export type BlockerFormInput = {
   suggestedSolution: string;
 };
 
+async function notifyBlockerChange(supabase: SupabaseClient, blockerId: string, actorId: string | null, actorName: string, verb: string, extraRecipient?: string | null) {
+  const { data: blocker } = await supabase.from("blockers").select("project_id, owner_id, title").eq("id", blockerId).maybeSingle();
+  if (!blocker) return;
+  const { data: project } = await supabase.from("projects").select("owner_id, name").eq("id", blocker.project_id).maybeSingle();
+  const recipients = [blocker.owner_id, project?.owner_id, extraRecipient].filter((v): v is string => !!v);
+  if (!recipients.length) return;
+  await logActivity({
+    kind: "project_updated",
+    actorId,
+    projectId: blocker.project_id,
+    refId: blockerId,
+    title: `${actorName} ${verb} a blocker on "${project?.name ?? "a project"}"`,
+    recipientIds: recipients,
+  });
+}
+
 export async function updateBlocker(id: string, input: BlockerFormInput) {
   const supabase = await createClient();
+  const person = await getCurrentPerson();
   const { error } = await supabase
     .from("blockers")
     .update({
@@ -326,19 +501,24 @@ export async function updateBlocker(id: string, input: BlockerFormInput) {
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
+  await notifyBlockerChange(supabase, id, person?.id ?? null, person?.name ?? "Someone", "updated", input.ownerId);
   revalidateProjectViews();
 }
 
 export async function resolveBlocker(id: string) {
   const supabase = await createClient();
+  const person = await getCurrentPerson();
   const { error } = await supabase.from("blockers").update({ status: "resolved" }).eq("id", id);
   if (error) throw new Error(error.message);
+  await notifyBlockerChange(supabase, id, person?.id ?? null, person?.name ?? "Someone", "resolved");
   revalidateProjectViews();
 }
 
 export async function reopenBlocker(id: string) {
   const supabase = await createClient();
+  const person = await getCurrentPerson();
   const { error } = await supabase.from("blockers").update({ status: "open" }).eq("id", id);
   if (error) throw new Error(error.message);
+  await notifyBlockerChange(supabase, id, person?.id ?? null, person?.name ?? "Someone", "reopened");
   revalidateProjectViews();
 }

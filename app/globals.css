@@ -52,7 +52,7 @@
   --radius-lg:18px;
   --radius-md:12px;
   --radius-sm:8px;
-  --shadow:0 1px 2px rgba(20,19,27,0.04), 0 10px 26px -18px rgba(20,19,27,0.22);
+  --shadow:0 1px 2px rgba(20,19,27,0.03), 0 8px 20px -16px rgba(20,19,27,0.16);
   --shadow-lift:0 22px 46px -20px rgba(20,19,27,0.30);
   --sidebar-w:236px;
   --sidebar-w-collapsed:72px;
@@ -161,7 +161,7 @@ input,select,textarea{font-family:inherit;}
 .save-status.saving{color:var(--ink-soft); background:var(--bg-deep);} .save-status.saving .sdot{background:var(--ink-faint);}
 .save-status.saved{color:var(--stage-done-fg); background:var(--stage-done-bg);} .save-status.saved .sdot{background:var(--stage-done-fg);}
 .save-status.error{color:var(--health-blocked); background:var(--pri-high-bg);} .save-status.error .sdot{background:var(--health-blocked);}
-main.content{padding:34px 44px 76px; max-width:1800px;}
+main.content{padding:28px 36px 64px; max-width:1800px;}
 @media(min-width:1900px){ main.content{max-width:1960px;} }
 
 /* ================= BUTTONS ================= */
@@ -221,7 +221,7 @@ main.content{padding:34px 44px 76px; max-width:1800px;}
 .adjusted-tag{font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px; background:#F0EAF8; color:var(--diem-purple); display:inline-flex; align-items:center; gap:5px;}
 
 /* ================= CARDS / GRID ================= */
-.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:24px;}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:20px;}
 .card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px;}
 .proj-group{margin-bottom:26px;}
 .proj-group:last-child{margin-bottom:0;}
@@ -262,7 +262,7 @@ main.content{padding:34px 44px 76px; max-width:1800px;}
 .tc-lbl{display:block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-faint); margin-bottom:3px;}
 .tc-val{display:block; font-size:12.5px; font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .section-title{font-size:12.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em; margin:0 0 13px; display:flex; align-items:center; gap:8px;}
-.section-block{margin-bottom:30px;}
+.section-block{margin-bottom:22px;}
 .panel-head-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:12px; flex-wrap:wrap;}
 .panel-head-row h2{font-size:20px; font-weight:600; margin:0;}
 .subtabs{display:flex; gap:6px; background:var(--bg-deep); padding:4px; border-radius:12px; width:fit-content;}
@@ -371,6 +371,11 @@ main.content{padding:34px 44px 76px; max-width:1800px;}
 .field-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
 .field-hint{font-size:10.5px; color:var(--ink-faint); margin-top:4px;}
 .field-inline-check{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600;}
+
+.mention-dropdown{position:absolute; z-index:60; top:100%; left:0; margin-top:4px; width:220px; max-height:200px; overflow-y:auto; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow-lift); padding:4px;}
+.mention-option{display:block; width:100%; text-align:left; padding:7px 10px; border-radius:7px; border:none; background:none; font-size:13px; font-weight:600; color:var(--ink); cursor:pointer;}
+.mention-option:hover, .mention-option.active{background:var(--bg-deep);}
+.mention-chip{background:var(--pri-med-bg,var(--bg-deep)); color:var(--diem-blue); font-weight:700; border-radius:5px; padding:0 3px;}
 .chip-select-row{display:flex; flex-wrap:wrap; gap:7px;}
 .chip-select{border:1px solid var(--border); background:var(--surface-alt); border-radius:999px; padding:6px 13px; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
 .chip-select.checked{background:var(--ink); color:#fff; border-color:var(--ink);}
@@ -518,6 +523,9 @@ main.content{padding:34px 44px 76px; max-width:1800px;}
 .cal-month-cell .cdate{font-size:11.5px; font-weight:700; color:var(--ink-soft); display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; margin-bottom:4px;}
 .cal-event{font-size:9.5px; font-weight:700; padding:2.5px 6px; border-radius:5px; margin-bottom:2.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .cal-event.dayoff{background:#F0EAF8; color:var(--diem-purple);}
+.cal-event.holiday{background:#E3F6F2; color:var(--diem-teal);}
+.cal-month-cell.is-holiday{background:#F4FCFB;}
+.cal-holiday-banner{display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:var(--radius-md); background:#E3F6F2; color:var(--diem-teal); font-weight:700; font-size:13px; margin-bottom:12px;}
 .cal-week-row{display:grid; grid-template-columns:80px repeat(7,1fr);}
 .cal-week-head{padding:9px 6px; text-align:center; border-bottom:1px solid var(--border-soft); border-right:1px solid var(--border-soft);}
 .cal-week-head .dow{font-size:9.5px; text-transform:uppercase; color:var(--ink-faint); display:block;}
@@ -692,7 +700,7 @@ main.content{padding:34px 44px 76px; max-width:1800px;}
 @media(max-width:640px){ .ceo-tri{grid-template-columns:1fr;} }
 
 /* Needs Attention */
-.attn-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-xl); box-shadow:var(--shadow); padding:22px 24px;}
+.attn-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-xl); box-shadow:var(--shadow); padding:16px 20px;}
 .attn-empty{display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--health-ontrack); background:var(--stage-done-bg); padding:14px 16px; border-radius:12px; font-weight:600;}
 .attn-row{display:flex; justify-content:space-between; align-items:center; gap:14px; padding:13px 15px; background:var(--surface-alt); border-left:4px solid var(--border); border-radius:10px; margin-bottom:9px; cursor:pointer; transition:transform .15s ease, background .15s ease;}
 .attn-row:last-child{margin-bottom:0;}

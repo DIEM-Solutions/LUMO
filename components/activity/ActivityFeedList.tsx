@@ -8,6 +8,12 @@ export const ACTIVITY_ICON: Record<ActivityKind, string> = {
   project_updated: "📋",
   dayoff_requested: "🌴",
   dayoff_decided: "🌴",
+  task_assigned: "👤",
+  task_updated: "✎",
+  note_mention: "@",
+  approval_requested: "✔",
+  support_request_updated: "🤝",
+  team_changed: "👥",
 };
 
 export function relativeTime(iso: string): string {

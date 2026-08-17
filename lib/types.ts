@@ -95,6 +95,7 @@ export type Task = {
   workload_days: number;
   include_weekends: boolean;
   notes: string;
+  notes_mentioned_ids: string[];
   blocker_reason: string;
   next_step: string;
   progress_pct: number | null;
@@ -200,7 +201,13 @@ export type ActivityKind =
   | "document_uploaded"
   | "project_updated"
   | "dayoff_requested"
-  | "dayoff_decided";
+  | "dayoff_decided"
+  | "task_assigned"
+  | "task_updated"
+  | "note_mention"
+  | "approval_requested"
+  | "support_request_updated"
+  | "team_changed";
 
 export type ActivityLogEntry = {
   id: string;
