@@ -8,7 +8,7 @@ import type { Store } from "@/lib/domain/store";
 import { overdueTaskCount, portfolioStats } from "@/lib/domain/stats";
 import { Card, KpiCard } from "@/components/ui/primitives";
 import { DonutWithLegend } from "@/components/ui/DonutWithLegend";
-import { NeedsAttentionCard } from "@/components/home/NeedsAttentionCard";
+import { PriorityPanel } from "@/components/home/PriorityPanel";
 import { ActivityFeedList } from "@/components/activity/ActivityFeedList";
 import type { ActivityLogEntry, WorkloadThresholds } from "@/lib/types";
 
@@ -78,23 +78,7 @@ export function ExecutiveHome({
         </Card>
       </div>
 
-      <div className="ceo-section">
-        <div className="ceo-section-head">
-          <h2>CEO Priorities</h2>
-          {attnItems.length > 0 && <span className="section-title" style={{ margin: 0 }}>{attnItems.length} item{attnItems.length === 1 ? "" : "s"}</span>}
-        </div>
-        <div className="field-hint" style={{ marginBottom: 10 }}>What you personally need to know, review, decide, or act on.</div>
-        <NeedsAttentionCard items={attnItems} canDismiss />
-      </div>
-
-      <div className="ceo-section">
-        <div className="ceo-section-head">
-          <h2>Company Overview</h2>
-          {overviewItems.length > 0 && <span className="section-title" style={{ margin: 0 }}>{overviewItems.length} item{overviewItems.length === 1 ? "" : "s"}</span>}
-        </div>
-        <div className="field-hint" style={{ marginBottom: 10 }}>Company-wide signals, regardless of your own involvement.</div>
-        <NeedsAttentionCard items={overviewItems} />
-      </div>
+      <PriorityPanel priorityItems={attnItems} overviewItems={overviewItems} />
 
       <div className="ceo-section ceo-tri">
         <Card>

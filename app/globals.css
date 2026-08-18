@@ -569,31 +569,6 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 .timeline-row .tl-bar{flex:1; height:5px; border-radius:3px; background:var(--bg-deep); position:relative; overflow:hidden;}
 .timeline-row .tl-bar > div{position:absolute; left:0; top:0; height:100%; border-radius:3px;}
 .timeline-row .tl-name{font-weight:600; width:150px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.attention-row{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 13px; background:var(--surface-alt); border-left:3px solid var(--border); border-radius:9px; margin-bottom:8px; cursor:pointer; transition:transform .15s ease;}
-.attention-row:hover{transform:translateX(2px);}
-.attention-row:last-child{margin-bottom:0;}
-.attention-row.sev-high{border-left-color:var(--health-blocked);}
-.attention-row.sev-med{border-left-color:var(--health-atrisk);}
-.attention-row .ar-text{font-size:12.5px; font-weight:600;}
-.attention-row .ar-sub{font-size:11px; color:var(--ink-soft); margin-top:2px;}
-
-/* ---- support request cards ---- */
-.support-card{background:var(--surface-alt); border:1px solid var(--border-soft); border-left:3px solid var(--diem-blue); border-radius:12px; padding:13px 15px; margin-bottom:9px;}
-.support-card:last-child{margin-bottom:0;}
-.support-card.status-accepted{border-left-color:var(--health-ontrack);}
-.support-card.status-resolved{opacity:.6;}
-.support-top{display:flex; align-items:center; gap:9px; margin-bottom:7px; flex-wrap:wrap;}
-.support-who{font-size:12.5px;}
-.support-msg{font-size:12.5px; color:var(--ink); line-height:1.5;}
-.support-meta{font-size:11px; color:var(--ink-soft); margin-top:6px;}
-.support-accepted{font-size:11.5px; font-weight:700; color:var(--health-ontrack); margin-top:8px;}
-.rec-card{display:flex; gap:12px; padding:13px 15px; border-radius:12px; background:linear-gradient(135deg, rgba(100,86,166,0.06), rgba(71,71,242,0.05)); border:1px solid #E4E1F2; margin-bottom:9px;}
-.rec-card:last-child{margin-bottom:0;}
-.rec-card .rc-icon{width:30px; height:30px; border-radius:9px; background:var(--surface); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 1px 2px rgba(20,19,27,0.06);}
-.rec-card .rc-body{flex:1; min-width:0;}
-.rec-card .rc-text{font-size:12.5px; line-height:1.55; color:var(--ink);}
-.rec-card .rc-text b{font-weight:700;}
-
 /* ---- blocker / risk cards ---- */
 .blocker-card{background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--health-blocked); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:19px 21px; margin-bottom:13px; transition:box-shadow .15s ease, transform .15s ease;}
 .blocker-card:hover{box-shadow:var(--shadow-lift); transform:translateY(-1px);}
@@ -670,10 +645,12 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 
 /* ================= CEO HOME / EXECUTIVE DASHBOARD ================= */
 .home-greeting{font-size:14.5px; font-weight:600; color:var(--ink-soft); margin-bottom:22px;}
-.ceo-section{margin-bottom:38px;}
+.ceo-section{margin-bottom:26px;}
 .ceo-section:last-child{margin-bottom:0;}
-.ceo-section-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; gap:12px; flex-wrap:wrap;}
-.ceo-section-head h2{font-size:18px; font-weight:600; margin:0;}
+.ceo-section-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; gap:12px; flex-wrap:wrap;}
+.ceo-section-head h2{font-size:17px; font-weight:600; margin:0;}
+.subtab-btn .cnt{margin-left:6px; font-family:var(--font-plex-mono),monospace; font-size:10.5px; font-weight:700; background:var(--bg-deep); color:var(--ink-soft); border-radius:999px; padding:1px 7px;}
+.subtab-btn.active .cnt{background:var(--surface); }
 
 /* charts: donut, CSS conic-gradient */
 .chart-row-top{display:flex; align-items:center; gap:20px; flex-wrap:wrap;}
@@ -700,11 +677,11 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 @media(max-width:640px){ .ceo-tri{grid-template-columns:1fr;} }
 
 /* Needs Attention */
-.attn-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-xl); box-shadow:var(--shadow); padding:16px 20px;}
-.attn-empty{display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--health-ontrack); background:var(--stage-done-bg); padding:14px 16px; border-radius:12px; font-weight:600;}
-.attn-row{display:flex; justify-content:space-between; align-items:center; gap:14px; padding:13px 15px; background:var(--surface-alt); border-left:4px solid var(--border); border-radius:10px; margin-bottom:9px; cursor:pointer; transition:transform .15s ease, background .15s ease;}
-.attn-row:last-child{margin-bottom:0;}
-.attn-row:hover{transform:translateX(2px); background:var(--bg-deep);}
+.attn-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:6px 16px;}
+.attn-empty{display:flex; align-items:center; gap:10px; font-size:13px; color:var(--health-ontrack); padding:13px 4px; font-weight:600;}
+.attn-row{display:flex; justify-content:space-between; align-items:center; gap:14px; padding:12px 4px 12px 11px; border-bottom:1px solid var(--border-soft); border-left:3px solid transparent; cursor:pointer; transition:background .15s ease, border-color .15s ease;}
+.attn-row:last-child{border-bottom:none;}
+.attn-row:hover{background:var(--bg-deep);}
 .attn-row.sev-critical{border-left-color:var(--health-blocked);}
 .attn-row.sev-warning{border-left-color:var(--health-atrisk);}
 .attn-main{min-width:0;}
