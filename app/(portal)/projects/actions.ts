@@ -119,6 +119,7 @@ export type ProjectFormInput = {
   ownerId: string;
   teamIds: string[];
   nextDeliverable: string;
+  priority: Priority;
 };
 
 export async function createProject(input: ProjectFormInput) {
@@ -138,6 +139,7 @@ export async function createProject(input: ProjectFormInput) {
       end_date: input.endDate,
       owner_id: input.ownerId,
       next_deliverable: input.nextDeliverable.trim() || null,
+      priority: input.priority,
     })
     .select()
     .single();
@@ -179,6 +181,7 @@ export async function updateProject(id: string, input: ProjectFormInput) {
       end_date: input.endDate,
       owner_id: input.ownerId,
       next_deliverable: input.nextDeliverable.trim() || null,
+      priority: input.priority,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

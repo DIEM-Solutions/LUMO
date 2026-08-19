@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
 import { createProject, deleteProject, updateProject } from "@/app/(portal)/projects/actions";
 import { toISO, addDays, today } from "@/lib/domain/dates";
-import type { Person, Project } from "@/lib/types";
+import type { Person, Priority, Project } from "@/lib/types";
 
 export function ProjectModal({
   onClose,
@@ -32,6 +32,7 @@ export function ProjectModal({
   const [ownerId, setOwnerId] = useState(project?.owner_id ?? eligibleOwners[0]?.id ?? "");
   const [teamIds, setTeamIds] = useState<string[]>(project?.team_ids ?? []);
   const [nextDeliverable, setNextDeliverable] = useState(project?.next_deliverable ?? "");
+  const [priority, setPriority] = useState<Priority>(project?.priority ?? "medium");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -54,6 +55,7 @@ export function ProjectModal({
       ownerId,
       teamIds,
       nextDeliverable: nextDeliverable.trim(),
+      priority,
     };
     try {
       if (project) {
@@ -148,15 +150,25 @@ export function ProjectModal({
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </div>
       </div>
-      <div className="field">
-        <label>Owner</label>
-        <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
-          {eligibleOwners.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+      <div className="field-row">
+        <div className="field">
+          <label>Owner</label>
+          <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
+            {eligibleOwners.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label>Priority</label>
+          <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
       </div>
       <div className="field">
         <label>Supporting team members</label>

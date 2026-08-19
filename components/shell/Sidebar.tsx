@@ -32,7 +32,9 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const isExec = person?.role_type === "ceo" || person?.role_type === "admin";
+  const isCeo = person?.role_type === "ceo";
+  const isExec = isCeo || person?.role_type === "admin";
+  const sections = isCeo ? SECTIONS.filter((s) => s.href !== "/dayoff") : SECTIONS;
 
   async function handleLogout() {
     const supabase = createClient();
@@ -60,7 +62,7 @@ export function Sidebar({
       </div>
 
       <nav className="sidebar-nav">
-        {SECTIONS.map((s) => {
+        {sections.map((s) => {
           const active = pathname?.startsWith(s.href);
           const label = s.label === "Home" && !isExec ? "My Workspace" : s.label;
           const unread = unreadBySection[s.href] ?? 0;

@@ -91,17 +91,15 @@ export function computeLoad(personId: string, store: Store): number {
   const windowStart = today();
   const windowEnd = addDays(windowStart, PLANNING_WINDOW_DAYS - 1);
   store.data.tasks.forEach((tk) => {
-    if (!store.isAssignedTo(tk, personId) || tk.status === "done") return;
+    // Not-started tasks don't count toward capacity until work actually
+    // begins — a scheduled-but-untouched task shouldn't make someone look
+    // busy on a day nothing has happened yet.
+    if (!store.isAssignedTo(tk, personId) || tk.status === "done" || tk.status === "not-started") return;
     const roleFactor = tk.assignee_id === personId ? 1 : 0.5;
     const statusFactor = tk.status === "blocked" ? 0.6 : 1;
     const span = taskWorkingDays(tk);
     const overlapDays = span.filter((d) => d >= windowStart && d <= windowEnd).length;
-    if (overlapDays > 0) {
-      load += overlapDays * roleFactor * statusFactor;
-    } else if (tk.status === "not-started") {
-      const daysToStart = dayDiff(windowStart, span[0]);
-      if (daysToStart > PLANNING_WINDOW_DAYS) load += (tk.workload_days || 1) * roleFactor * 0.15;
-    }
+    if (overlapDays > 0) load += overlapDays * roleFactor * statusFactor;
   });
   return load;
 }
@@ -130,7 +128,7 @@ export function computeCapacityForWindow(
   const windowEnd = addDays(windowStart, PLANNING_WINDOW_DAYS - 1);
   let load = 0;
   store.data.tasks.forEach((tk) => {
-    if (!store.isAssignedTo(tk, personId) || tk.status === "done") return;
+    if (!store.isAssignedTo(tk, personId) || tk.status === "done" || tk.status === "not-started") return;
     const roleFactor = tk.assignee_id === personId ? 1 : 0.5;
     const statusFactor = tk.status === "blocked" ? 0.6 : 1;
     const span = taskWorkingDays(tk);

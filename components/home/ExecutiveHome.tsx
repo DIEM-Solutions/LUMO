@@ -69,17 +69,6 @@ export function ExecutiveHome({
         </div>
       </div>
 
-      <div className="ceo-section">
-        <div className="panel-head-row">
-          <h2>Recent activity</h2>
-        </div>
-        <Card>
-          <ActivityFeedList entries={activity} projects={store.data.projects} limit={8} />
-        </Card>
-      </div>
-
-      <PriorityPanel priorityItems={attnItems} overviewItems={overviewItems} />
-
       <div className="ceo-section ceo-tri">
         <Card>
           <div className="panel-head-row">
@@ -119,6 +108,17 @@ export function ExecutiveHome({
               <div className="empty-state">Nothing scheduled.</div>
             )}
           </div>
+        </Card>
+      </div>
+
+      <PriorityPanel priorityItems={attnItems} overviewItems={overviewItems} />
+
+      <div className="ceo-section">
+        <div className="panel-head-row">
+          <h2>Recent activity</h2>
+        </div>
+        <Card>
+          <ActivityFeedList entries={activity} projects={store.data.projects} limit={8} />
         </Card>
       </div>
     </>
