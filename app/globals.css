@@ -488,7 +488,7 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 .plan-head-cell.weekend{background:#F1F1F7;}
 .plan-head-cell.today{background:var(--stage-prog-bg); color:var(--stage-prog-fg); font-weight:700;}
 .plan-corner{background:var(--surface-alt); border-bottom:1px solid var(--border-soft);}
-.plan-name-cell{position:sticky; left:0; background:var(--surface); padding:14px 16px; display:flex; align-items:center; gap:11px; z-index:4; min-width:220px;}
+.plan-name-cell{position:sticky; left:0; background:var(--surface); padding:12px 14px; display:flex; align-items:center; gap:10px; z-index:4; min-width:190px;}
 .plan-name-cell .pn-name{font-size:13.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;}
 .plan-name-cell .pn-role{font-size:11px; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;}
 .plan-day-cell{position:relative; min-height:78px; padding:5px; background:var(--surface);}
@@ -526,12 +526,11 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 .cal-event.holiday{background:#E3F6F2; color:var(--diem-teal);}
 .cal-month-cell.is-holiday{background:#F4FCFB;}
 .cal-holiday-banner{display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:var(--radius-md); background:#E3F6F2; color:var(--diem-teal); font-weight:700; font-size:13px; margin-bottom:12px;}
-.cal-week-row{display:grid; grid-template-columns:80px repeat(7,1fr);}
+.cal-week-row{display:grid; grid-template-columns:repeat(7,1fr);}
 .cal-week-head{padding:9px 6px; text-align:center; border-bottom:1px solid var(--border-soft); border-right:1px solid var(--border-soft);}
 .cal-week-head .dow{font-size:9.5px; text-transform:uppercase; color:var(--ink-faint); display:block;}
 .cal-week-head .dnum{font-family:var(--font-plex-mono),monospace; font-size:15px; font-weight:600;}
 .cal-week-body{padding:8px 6px; min-height:200px; border-right:1px solid var(--border-soft); border-bottom:1px solid var(--border-soft);}
-.cal-week-timecol{padding:8px 6px; font-size:10px; color:var(--ink-faint); border-bottom:1px solid var(--border-soft);}
 
 /* ================= TEAM CAPACITY ================= */
 .capacity-list{display:flex; flex-direction:column;}

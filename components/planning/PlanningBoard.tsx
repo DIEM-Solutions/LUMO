@@ -100,7 +100,7 @@ export function PlanningBoard({
       </div>
 
       <div className="plan-wrap">
-        <div className="plan-grid" style={{ gridTemplateColumns: `220px repeat(${days.length}, minmax(132px,1fr))` }}>
+        <div className="plan-grid" style={{ gridTemplateColumns: `190px repeat(${days.length}, minmax(100px,1fr))` }}>
           <div className="plan-corner" />
           {days.map((d) => (
             <div key={d.toISOString()} className={`plan-head-cell${[0, 6].includes(d.getDay()) ? " weekend" : ""}${dayDiff(today(), d) === 0 ? " today" : ""}`}>
