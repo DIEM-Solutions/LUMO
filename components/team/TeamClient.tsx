@@ -156,49 +156,47 @@ export function TeamClient({
               </button>
             )}
           </div>
-          <Card>
+          {rows.length ? (
             <div className="team-simple-grid">
-              {rows.length ? (
-                rows.map((r) => {
-                  const mainProj = mainActiveProjectFor(r.person.id, store);
-                  return (
-                    <div className="team-card" key={r.person.id}>
-                      <div className="tc-top">
-                        <Avatar person={r.person} size="lg" />
-                        <div className="tc-id">
-                          <div className="tc-name">{r.person.name}{r.cap.awayNow ? " 🌴" : ""}</div>
-                          <div className="tc-role">{r.person.role}</div>
-                        </div>
+              {rows.map((r) => {
+                const mainProj = mainActiveProjectFor(r.person.id, store);
+                return (
+                  <div className="team-card" key={r.person.id}>
+                    <div className="tc-top">
+                      <Avatar person={r.person} size="lg" />
+                      <div className="tc-id">
+                        <div className="tc-name">{r.person.name}{r.cap.awayNow ? " 🌴" : ""}</div>
+                        <div className="tc-role">{r.person.role}</div>
                       </div>
-                      <div className="tc-row">
-                        <CapStatusPill band={r.cap.band} />
-                        <span className="tc-avail">
-                          {r.cap.pct == null ? "" : `${Math.max(0, 100 - r.cap.pct)}% available${r.cap.source === "reported" ? " · reported" : ""}`}
-                        </span>
-                      </div>
-                      {r.cap.pct != null && (
-                        <div style={{ marginTop: 8 }}>
-                          <CapacityBar pct={clamp(r.cap.pct, 4, 100)} band={r.cap.band === "unknown" ? "available" : r.cap.band} />
-                        </div>
-                      )}
-                      <div className="tc-main-proj">
-                        <span className="tc-lbl">Main project</span>
-                        <span className="tc-val">{mainProj ? mainProj.name : "No active project"}</span>
-                      </div>
-                      {isAdmin && r.person.next_assessment_date && (
-                        <div className="tc-main-proj" style={{ marginTop: 8, paddingTop: 8 }}>
-                          <span className="tc-lbl">Next assessment</span>
-                          <span className="tc-val">{fmt(fromISO(r.person.next_assessment_date))}</span>
-                        </div>
-                      )}
                     </div>
-                  );
-                })
-              ) : (
-                <div className="empty-state">No one matches this filter.</div>
-              )}
+                    <div className="tc-row">
+                      <CapStatusPill band={r.cap.band} />
+                      <span className="tc-avail">
+                        {r.cap.pct == null ? "" : `${Math.max(0, 100 - r.cap.pct)}% available${r.cap.source === "reported" ? " · reported" : ""}`}
+                      </span>
+                    </div>
+                    {r.cap.pct != null && (
+                      <div style={{ marginTop: 8 }}>
+                        <CapacityBar pct={clamp(r.cap.pct, 4, 100)} band={r.cap.band === "unknown" ? "available" : r.cap.band} />
+                      </div>
+                    )}
+                    <div className="tc-main-proj">
+                      <span className="tc-lbl">Main project</span>
+                      <span className="tc-val">{mainProj ? mainProj.name : "No active project"}</span>
+                    </div>
+                    {isAdmin && r.person.next_assessment_date && (
+                      <div className="tc-main-proj" style={{ marginTop: 8, paddingTop: 8 }}>
+                        <span className="tc-lbl">Next assessment</span>
+                        <span className="tc-val">{fmt(fromISO(r.person.next_assessment_date))}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          </Card>
+          ) : (
+            <Card><div className="empty-state">No one matches this filter.</div></Card>
+          )}
         </div>
         <div className="stack-gap">
           <Card>

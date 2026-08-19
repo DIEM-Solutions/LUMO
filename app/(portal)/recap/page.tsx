@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Topbar } from "@/components/shell/Topbar";
 import { Avatar } from "@/components/ui/primitives";
-import { NeedsAttentionCard } from "@/components/home/NeedsAttentionCard";
+import { PriorityPanel } from "@/components/home/PriorityPanel";
 import { getCurrentPerson } from "@/lib/auth/session";
 import { loadPortalData } from "@/lib/data/portal";
 import { createStore } from "@/lib/domain/store";
@@ -49,23 +49,8 @@ export default async function RecapPage() {
           </div>
         </div>
 
-        <div className="two-col" style={{ marginBottom: 24 }}>
-          <div>
-            <div className="panel-head-row">
-              <h2>My Priorities</h2>
-              {attention.length > 0 && <span className="section-title" style={{ margin: 0 }}>{attention.length} item{attention.length === 1 ? "" : "s"}</span>}
-            </div>
-            <div className="field-hint" style={{ marginBottom: 10 }}>What needs your review, decision, or action.</div>
-            <NeedsAttentionCard items={attention} />
-          </div>
-          <div>
-            <div className="panel-head-row">
-              <h2>Company Overview</h2>
-              {overview.length > 0 && <span className="section-title" style={{ margin: 0 }}>{overview.length} item{overview.length === 1 ? "" : "s"}</span>}
-            </div>
-            <div className="field-hint" style={{ marginBottom: 10 }}>Company-wide signals, regardless of your own involvement.</div>
-            <NeedsAttentionCard items={overview} />
-          </div>
+        <div style={{ marginBottom: 24 }}>
+          <PriorityPanel priorityItems={attention} overviewItems={overview} />
         </div>
 
         <div className="panel-head-row">
