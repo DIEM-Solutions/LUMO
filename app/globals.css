@@ -232,8 +232,8 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 
 /* ---- simple team card (main Team page) ---- */
 .team-simple-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px;}
-.team-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px; cursor:pointer; transition:transform .15s ease, border-color .15s ease;}
-.team-card:hover{transform:translateY(-2px); border-color:var(--ink-faint);}
+.team-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px; cursor:pointer; transition:transform .15s ease;}
+.team-card:hover{transform:translateY(-2px);}
 
 /* ---- Team: capacity heat map ---- */
 .heatmap-card{margin-bottom:22px;}
