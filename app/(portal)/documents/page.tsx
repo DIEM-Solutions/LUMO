@@ -10,7 +10,11 @@ export default async function DocumentsPage() {
   const person = await getCurrentPerson();
   if (!person) redirect("/login");
 
-  const [documents, data, settings] = await Promise.all([loadDocuments(), loadPortalData(), loadAppSettings()]);
+  const [documents, data, settings] = await Promise.all([
+    loadDocuments(),
+    loadPortalData({ tasks: false, blockers: false, dayOff: false }),
+    loadAppSettings(),
+  ]);
   const perms = personPermissions(person);
 
   return (

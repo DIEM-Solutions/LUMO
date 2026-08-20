@@ -10,7 +10,10 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const person = await getCurrentPerson();
   if (!person) redirect("/login");
 
-  const [data, settings] = await Promise.all([loadPortalData(), loadAppSettings()]);
+  const [data, settings] = await Promise.all([
+    loadPortalData({ dayOff: false, projectId: id }),
+    loadAppSettings(),
+  ]);
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();
 

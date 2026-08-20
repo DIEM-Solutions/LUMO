@@ -13,7 +13,7 @@ export default async function DayOffPage() {
 
   const [dayOff, data, settings, holidays] = await Promise.all([
     loadDayOff(),
-    loadPortalData(),
+    loadPortalData({ tasks: false, blockers: false, dayOff: false }),
     loadAppSettings(),
     loadPublicHolidays(),
   ]);
