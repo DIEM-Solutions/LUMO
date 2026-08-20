@@ -1,9 +1,19 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Person, Permissions } from "@/lib/types";
 
 const NO_PROJECT_CREATE_LEVELS = new Set(["Intern", "Junior Innovation Lead"]);
 
-export async function getCurrentPerson(): Promise<Person | null> {
+/**
+ * Every layout and page calls this to check who's logged in -- often
+ * several times per navigation (root layout, the page itself, sometimes a
+ * nested component). Each call was doing a real network round-trip to
+ * Supabase's auth server plus a `people` lookup. Wrapped in React's
+ * `cache()` so repeated calls within the same request reuse the first
+ * result instead of re-fetching identical, unchanging-within-this-request
+ * data three-plus times per navigation.
+ */
+export const getCurrentPerson = cache(async (): Promise<Person | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -25,7 +35,7 @@ export async function getCurrentPerson(): Promise<Person | null> {
   if (error || !linked) return null;
 
   return linked as Person;
-}
+});
 
 export type EffectivePermissions = Required<Permissions> & { isAdmin: boolean };
 

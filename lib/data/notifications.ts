@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPerson } from "@/lib/auth/session";
 import type { ActivityLogEntry } from "@/lib/types";
@@ -38,7 +39,10 @@ export function unreadCountsBySection(items: NotificationItem[]): Record<string,
   return counts;
 }
 
-export async function loadNotifications(limit = 20): Promise<NotificationItem[]> {
+// Called once by the root layout (for sidebar badges) and again by every
+// page's Topbar (for the bell dropdown) -- cache() means that's one query
+// per request, not two, as long as both callers use the same limit.
+export const loadNotifications = cache(async (limit = 20): Promise<NotificationItem[]> => {
   const person = await getCurrentPerson();
   if (!person) return [];
 
@@ -53,4 +57,4 @@ export async function loadNotifications(limit = 20): Promise<NotificationItem[]>
   return ((rows ?? []) as unknown as { read_at: string | null; activity_log: ActivityLogEntry | null }[])
     .filter((r) => r.activity_log)
     .map((r) => ({ ...(r.activity_log as ActivityLogEntry), unread: r.read_at === null }));
-}
+});

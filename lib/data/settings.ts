@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { AppSettings, PublicHoliday } from "@/lib/types";
 import { DEFAULT_WORKLOAD_THRESHOLDS } from "@/lib/domain/capacity";
@@ -13,7 +14,9 @@ const FALLBACK_SETTINGS: AppSettings = {
   task_status_labels: {},
 };
 
-export async function loadAppSettings(): Promise<AppSettings> {
+// Both the root layout and most individual pages call this in the same
+// request -- cache() dedupes those into a single query instead of two.
+export const loadAppSettings = cache(async (): Promise<AppSettings> => {
   const supabase = await createClient();
   const { data } = await supabase.from("app_settings").select("*").eq("id", 1).maybeSingle();
   if (!data) return FALLBACK_SETTINGS;
@@ -27,7 +30,7 @@ export async function loadAppSettings(): Promise<AppSettings> {
     branding: data.branding ?? {},
     task_status_labels: data.task_status_labels ?? {},
   };
-}
+});
 
 export async function loadPublicHolidays(): Promise<PublicHoliday[]> {
   const supabase = await createClient();
