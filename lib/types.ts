@@ -23,7 +23,7 @@ export type Person = {
   role_type: RoleType;
   email: string | null;
   skills: string[];
-  capacity_baseline: number | null;
+  weekly_capacity_hours: number | null;
   working_arrangement: string | null;
   active: boolean | null;
   ring_a: string | null;
@@ -92,7 +92,7 @@ export type Task = {
   start_date: string | null;
   priority: Priority;
   weight: number;
-  workload_days: number;
+  workload_hours: number;
   include_weekends: boolean;
   notes: string;
   notes_mentioned_ids: string[];
@@ -101,7 +101,7 @@ export type Task = {
   progress_pct: number | null;
   approval_person_id: string | null;
   dependency: string;
-  remaining_days: number | null;
+  remaining_hours: number | null;
   approval_decision: ApprovalDecision | null;
   created_at: string;
   updated_at: string;

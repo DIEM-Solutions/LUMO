@@ -232,7 +232,7 @@ export type TaskFormInput = {
   dueDate: string;
   weight: number;
   startDate: string;
-  workloadDays: number;
+  workloadHours: number;
   includeWeekends: boolean;
   blockerReason: string;
   approvalPersonId: string | null;
@@ -255,7 +255,7 @@ export async function createTask(input: TaskFormInput) {
       due_date: input.dueDate,
       weight: input.weight,
       start_date: input.startDate,
-      workload_days: input.workloadDays,
+      workload_hours: input.workloadHours,
       include_weekends: input.includeWeekends,
       blocker_reason: input.status === "blocked" ? input.blockerReason : "",
       approval_person_id: input.approvalPersonId,
@@ -320,7 +320,7 @@ export async function updateTask(id: string, input: TaskFormInput) {
       due_date: input.dueDate,
       weight: input.weight,
       start_date: input.startDate,
-      workload_days: input.workloadDays,
+      workload_hours: input.workloadHours,
       include_weekends: input.includeWeekends,
       blocker_reason: input.status === "blocked" ? input.blockerReason : "",
       approval_person_id: input.approvalPersonId,

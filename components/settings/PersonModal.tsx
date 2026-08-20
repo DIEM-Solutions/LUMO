@@ -26,7 +26,7 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
   const [role, setRole] = useState(person?.role ?? "");
   const [roleType, setRoleType] = useState<RoleType>(person?.role_type ?? "employee");
   const [email, setEmail] = useState(person?.email ?? "");
-  const [capacityBaseline, setCapacityBaseline] = useState<string>(person?.capacity_baseline?.toString() ?? "10");
+  const [weeklyCapacityHours, setWeeklyCapacityHours] = useState<string>(person?.weekly_capacity_hours?.toString() ?? "40");
   const [workingArrangement, setWorkingArrangement] = useState(person?.working_arrangement ?? "Full-Time");
   const [leaveBalanceDays, setLeaveBalanceDays] = useState(person?.leave_balance_days ?? 15);
   const [nextAssessmentDate, setNextAssessmentDate] = useState(person?.next_assessment_date ?? "");
@@ -52,7 +52,7 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
       role: role.trim(),
       roleType,
       email: email.trim(),
-      capacityBaseline: capacityBaseline.trim() ? Number(capacityBaseline) : null,
+      weeklyCapacityHours: weeklyCapacityHours.trim() ? Number(weeklyCapacityHours) : null,
       workingArrangement: workingArrangement.trim(),
       leaveBalanceDays: Number(leaveBalanceDays) || 15,
       nextAssessmentDate: nextAssessmentDate || null,
@@ -190,8 +190,8 @@ export function PersonModal({ onClose, person }: { onClose: () => void; person: 
       </div>
       <div className="field-row">
         <div className="field">
-          <label>Weekly capacity (working days)</label>
-          <input type="number" min={0} step={0.5} value={capacityBaseline} onChange={(e) => setCapacityBaseline(e.target.value)} />
+          <label>Weekly capacity (hours)</label>
+          <input type="number" min={0} step={0.5} value={weeklyCapacityHours} onChange={(e) => setWeeklyCapacityHours(e.target.value)} />
         </div>
         <div className="field">
           <label>Working arrangement</label>

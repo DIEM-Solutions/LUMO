@@ -150,7 +150,7 @@ export function PlanningBoard({
                               key={tk.id}
                               className={`plan-block ${tk.status} seg-${seg}${overdue ? " plan-overdue" : ""}`}
                               style={showTypeAccent ? { borderLeft: `3px solid ${typeAccent}` } : undefined}
-                              title={`${tk.name} · ${tk.workload_days}d`}
+                              title={`${tk.name} · ${tk.workload_hours}h`}
                               onClick={() => onOpenTask(tk)}
                             >
                               {seg === "mid" || seg === "end" ? "" : tk.name}

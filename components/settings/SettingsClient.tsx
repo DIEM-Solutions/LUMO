@@ -61,7 +61,7 @@ export function SettingsClient({
           <div className="myproj-grid" style={{ marginTop: 18 }}>
             <div>
               <span className="myproj-lbl">Weekly capacity</span>
-              <span className="myproj-val">{currentPerson.capacity_baseline ?? "—"} days</span>
+              <span className="myproj-val">{currentPerson.weekly_capacity_hours ?? "—"} hours</span>
             </div>
             <div>
               <span className="myproj-lbl">Working arrangement</span>
@@ -149,7 +149,7 @@ export function SettingsClient({
                   <td>{p.role ?? "—"}</td>
                   <td>{ROLE_TYPE_LABEL[p.role_type]}</td>
                   <td>{p.email ?? "—"}</td>
-                  <td>{p.capacity_baseline != null ? `${p.capacity_baseline}d/wk` : "—"}</td>
+                  <td>{p.weekly_capacity_hours != null ? `${p.weekly_capacity_hours}h/wk` : "—"}</td>
                   <td>
                     <span className={`cap-status-pill ${p.active === false ? "unknown" : "available"}`}>
                       {p.active === false ? "Inactive" : "Active"}

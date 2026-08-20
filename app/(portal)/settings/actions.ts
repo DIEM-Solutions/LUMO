@@ -33,7 +33,7 @@ export type PersonFormInput = {
   role: string;
   roleType: RoleType;
   email: string;
-  capacityBaseline: number | null;
+  weeklyCapacityHours: number | null;
   workingArrangement: string;
   leaveBalanceDays: number;
   nextAssessmentDate: string | null;
@@ -48,7 +48,7 @@ export async function createPerson(input: PersonFormInput) {
     role: input.role || null,
     role_type: input.roleType,
     email: input.email || null,
-    capacity_baseline: input.capacityBaseline,
+    weekly_capacity_hours: input.weeklyCapacityHours,
     working_arrangement: input.workingArrangement || null,
     leave_balance_days: input.leaveBalanceDays,
     next_assessment_date: input.nextAssessmentDate,
@@ -70,7 +70,7 @@ export async function updatePerson(id: string, input: PersonFormInput) {
       role: input.role || null,
       role_type: input.roleType,
       email: input.email || null,
-      capacity_baseline: input.capacityBaseline,
+      weekly_capacity_hours: input.weeklyCapacityHours,
       working_arrangement: input.workingArrangement || null,
       leave_balance_days: input.leaveBalanceDays,
       next_assessment_date: input.nextAssessmentDate,

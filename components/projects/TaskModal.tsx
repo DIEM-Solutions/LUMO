@@ -55,7 +55,7 @@ export function TaskModal({
   const [dueDate, setDueDate] = useState(task?.due_date ?? toISO(addDays(today(), 7)));
   const [weight, setWeight] = useState(task?.weight ?? 10);
   const [startDate, setStartDate] = useState(task?.start_date ?? toISO(today()));
-  const [workloadDays, setWorkloadDays] = useState(task?.workload_days ?? 1);
+  const [workloadHours, setWorkloadHours] = useState(task?.workload_hours ?? 8);
   const [includeWeekends, setIncludeWeekends] = useState(task?.include_weekends ?? false);
   const [blockerReason, setBlockerReason] = useState(task?.blocker_reason ?? "");
   const [approvalPersonId, setApprovalPersonId] = useState(task?.approval_person_id ?? "");
@@ -85,7 +85,7 @@ export function TaskModal({
       dueDate,
       weight: Math.max(0, Math.min(100, weight)),
       startDate,
-      workloadDays: Math.max(0.5, workloadDays),
+      workloadHours: Math.max(0.5, workloadHours),
       includeWeekends,
       blockerReason,
       approvalPersonId: approvalPersonId || null,
@@ -231,8 +231,8 @@ export function TaskModal({
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </div>
         <div className="field">
-          <label>Estimated workload (working days)</label>
-          <input type="number" min={0.5} step={0.5} value={workloadDays} onChange={(e) => setWorkloadDays(+e.target.value)} />
+          <label>Estimated workload (hours)</label>
+          <input type="number" min={0.5} step={0.5} value={workloadHours} onChange={(e) => setWorkloadHours(+e.target.value)} />
         </div>
       </div>
       <div className="field">

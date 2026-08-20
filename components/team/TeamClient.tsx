@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CAP_STATUS_LABEL, computeCapacity, computeCapacityForWindow } from "@/lib/domain/capacity";
+import { CAP_STATUS_LABEL, computeCapacity, computeDailyCapacity, computeWeeklyCapacity } from "@/lib/domain/capacity";
 import { addDays, clamp, fmt, fromISO, round, today } from "@/lib/domain/dates";
 import { computeStage } from "@/lib/domain/stage";
 import { createStore, type PortalData } from "@/lib/domain/store";
@@ -16,7 +16,7 @@ function mainActiveProjectFor(personId: string, store: ReturnType<typeof createS
   return active[0] ?? null;
 }
 
-const PLANNING_WINDOW_DAYS = 14;
+const ABSENCE_LOOKAHEAD_DAYS = 14;
 
 const DISTRIBUTION_PALETTE = ["var(--diem-blue)", "var(--diem-teal)", "var(--diem-yellow)", "var(--diem-purple)", "var(--diem-orange)"];
 
@@ -77,17 +77,16 @@ export function TeamClient({
   });
 
   const windowStart = today();
-  const windowEnd = addDays(windowStart, PLANNING_WINDOW_DAYS - 1);
+  const windowEnd = addDays(windowStart, ABSENCE_LOOKAHEAD_DAYS - 1);
   const absencesInWindow = data.dayOff.filter(
     (d) => d.status === "approved" && fromISO(d.end_date) >= windowStart && fromISO(d.start_date) <= windowEnd
   );
   const canHelp = allRows.filter((r) => ["available", "balanced"].includes(r.cap.band));
 
-  const weeks34Start = addDays(windowStart, PLANNING_WINDOW_DAYS);
   const heatmapRows = rows.map((r) => ({
     person: r.person,
-    now: { pct: r.cap.pct, band: r.cap.band },
-    next: computeCapacityForWindow(r.person.id, store, weeks34Start, thresholds),
+    daily: computeDailyCapacity(r.person.id, store, windowStart, thresholds),
+    weekly: computeWeeklyCapacity(r.person.id, store, undefined, thresholds),
   }));
 
   const projectColor = new Map<string, string>();
@@ -108,23 +107,23 @@ export function TeamClient({
           <h2>Capacity heat map</h2>
         </div>
         <div className="field-hint" style={{ marginBottom: 12 }}>
-          Projected load for this 2-week window vs. the two weeks after — spot who&apos;s about to get overloaded before it happens.
+          Hours booked today vs. this week, out of each person&apos;s real capacity — spot who&apos;s about to get overloaded before it happens.
         </div>
         <div className="heatmap-grid">
           <div className="heatmap-head">Team member</div>
-          <div className="heatmap-head" style={{ justifyContent: "center" }}>This 2 weeks</div>
-          <div className="heatmap-head" style={{ justifyContent: "center" }}>Weeks 3–4</div>
+          <div className="heatmap-head" style={{ justifyContent: "center" }}>Today</div>
+          <div className="heatmap-head" style={{ justifyContent: "center" }}>This week</div>
           {heatmapRows.map((r) => (
             <div key={r.person.id} style={{ display: "contents" }}>
               <div className="heatmap-person">
                 <Avatar person={r.person} size="sm" />
                 <span className="mp-name">{r.person.name}</span>
               </div>
-              <div className={`heatmap-cell ${r.now.band}`}>
-                {r.now.pct != null ? `${r.now.pct}%` : "—"}
+              <div className={`heatmap-cell ${r.daily.band}`}>
+                {r.daily.pct != null ? `${r.daily.hours}/${r.daily.capacityHours}h` : "—"}
               </div>
-              <div className={`heatmap-cell ${r.next.band}`}>
-                {r.next.pct != null ? `${r.next.pct}%` : "—"}
+              <div className={`heatmap-cell ${r.weekly.band}`}>
+                {r.weekly.pct != null ? `${r.weekly.hours}/${r.weekly.capacityHours}h` : "—"}
               </div>
             </div>
           ))}

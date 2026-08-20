@@ -15,7 +15,7 @@ export type NextStep = {
   status: Task["status"];
   overdue: boolean;
   blocked: boolean;
-  remainingDays: number | null;
+  remainingHours: number | null;
   dependency: string;
   approvalPerson: string | null;
   waitingApproval: boolean;
@@ -44,7 +44,7 @@ export function computeNextSteps(store: Store, scopePersonId?: string | null): N
       status: tk.status,
       overdue,
       blocked: tk.status === "blocked",
-      remainingDays: tk.remaining_days != null ? tk.remaining_days : tk.workload_days,
+      remainingHours: tk.remaining_hours != null ? tk.remaining_hours : tk.workload_hours,
       dependency: tk.status === "blocked" ? tk.blocker_reason : tk.dependency || "",
       approvalPerson: tk.approval_person_id,
       waitingApproval,

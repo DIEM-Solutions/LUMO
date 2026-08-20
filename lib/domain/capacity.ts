@@ -5,6 +5,10 @@ import type { Store } from "./store";
 
 export const DEFAULT_WORKING_CALENDAR: WorkingCalendar = { workingDays: [1, 2, 3, 4, 5], holidays: new Set() };
 
+export const HOURS_PER_DAY = 8;
+export const WORK_DAYS_PER_WEEK = 5;
+export const DEFAULT_WEEKLY_CAPACITY_HOURS = HOURS_PER_DAY * WORK_DAYS_PER_WEEK;
+
 export const DEFAULT_WORKLOAD_THRESHOLDS: WorkloadThresholds = {
   balanced: 60,
   almostFull: 85,
@@ -23,11 +27,21 @@ export const CAP_STATUS_LABEL: Record<string, string> = {
 
 const URGENT_WINDOW_DAYS = 3;
 const NEAR_WINDOW_DAYS = 14;
-const PLANNING_WINDOW_DAYS = 14;
+
+export function startOfWeek(d: Date): Date {
+  return addDays(d, -d.getDay());
+}
 
 export function taskWorkingDays(tk: Task): Date[] {
   const start = tk.start_date ? fromISO(tk.start_date) : fromISO(tk.due_date);
-  return workingDaySpan(start, tk.workload_days || 1, !!tk.include_weekends);
+  const spanDays = Math.max(1, Math.ceil((tk.workload_hours || HOURS_PER_DAY) / HOURS_PER_DAY));
+  return workingDaySpan(start, spanDays, !!tk.include_weekends);
+}
+
+/** Hours of work a task contributes per working day it spans (an even split across its span). */
+function taskHoursPerDay(tk: Task): number {
+  const span = taskWorkingDays(tk);
+  return span.length ? (tk.workload_hours || HOURS_PER_DAY) / span.length : 0;
 }
 
 export function dayOffOverlapsDate(d: DayOff, date: Date): boolean {
@@ -86,68 +100,112 @@ export function dayOffDaysInWindow(
   return days;
 }
 
-export function computeLoad(personId: string, store: Store): number {
-  let load = 0;
-  const windowStart = today();
-  const windowEnd = addDays(windowStart, PLANNING_WINDOW_DAYS - 1);
+function bandFor(pct: number, thresholds: WorkloadThresholds): CapacityBand {
+  if (pct > thresholds.overloaded) return "overloaded";
+  if (pct >= thresholds.needsSupport) return "needs-support";
+  if (pct >= thresholds.almostFull) return "almost-full";
+  if (pct >= thresholds.balanced) return "balanced";
+  return "available";
+}
+
+/**
+ * Hours of work a person is carrying within an arbitrary date window, from
+ * tasks actually underway. Not-started and done tasks never contribute --
+ * a scheduled-but-untouched task shouldn't make someone look busy before
+ * any work has actually happened on it.
+ */
+export function computeLoadHours(personId: string, store: Store, windowStart: Date, windowEnd: Date): number {
+  let hours = 0;
   store.data.tasks.forEach((tk) => {
-    // Not-started tasks don't count toward capacity until work actually
-    // begins — a scheduled-but-untouched task shouldn't make someone look
-    // busy on a day nothing has happened yet.
     if (!store.isAssignedTo(tk, personId) || tk.status === "done" || tk.status === "not-started") return;
     const roleFactor = tk.assignee_id === personId ? 1 : 0.5;
     const statusFactor = tk.status === "blocked" ? 0.6 : 1;
+    const perDay = taskHoursPerDay(tk);
     const span = taskWorkingDays(tk);
     const overlapDays = span.filter((d) => d >= windowStart && d <= windowEnd).length;
-    if (overlapDays > 0) load += overlapDays * roleFactor * statusFactor;
+    if (overlapDays > 0) hours += overlapDays * perDay * roleFactor * statusFactor;
   });
-  return load;
+  return Math.round(hours * 10) / 10;
 }
 
-export type WindowLoad = {
+export type DailyCapacity = {
+  hours: number;
+  capacityHours: number;
   pct: number | null;
   band: CapacityBand | "unknown";
 };
 
 /**
- * Forward-looking capacity for an arbitrary 14-day window (same window
- * length as the live capacity calc, just shifted in time). Used for the
- * Team page's capacity heat map. Deliberately ignores blocked/overdue/urgent
- * flags that computeCapacity uses to bump today's status — those describe
- * current state, not a future week's projected load.
+ * Today's actual hours vs. a person's daily capacity (weekly capacity / 5).
+ * If the person has a manually-reported weekly utilization, that figure
+ * takes precedence -- same rule computeCapacity follows -- so the hours
+ * shown here never contradict their status badge elsewhere in the app.
  */
-export function computeCapacityForWindow(
+export function computeDailyCapacity(
   personId: string,
   store: Store,
-  windowStart: Date,
+  date: Date = today(),
   thresholds: WorkloadThresholds = DEFAULT_WORKLOAD_THRESHOLDS
-): WindowLoad {
+): DailyCapacity {
   const person = store.personById(personId);
-  if (!person || person.capacity_baseline == null) return { pct: null, band: "unknown" };
+  const hours = computeLoadHours(personId, store, date, date);
+  if (!person || person.weekly_capacity_hours == null) {
+    return { hours, capacityHours: HOURS_PER_DAY, pct: null, band: "unknown" };
+  }
+  if (isApprovedDayOff(personId, date, store.data.dayOff)) {
+    return { hours, capacityHours: 0, pct: hours > 0 ? 999 : 0, band: hours > 0 ? "overloaded" : "available" };
+  }
+  const capacityHours = person.weekly_capacity_hours / WORK_DAYS_PER_WEEK;
+  if (person.manual_utilization) {
+    const reportedHours = Math.round(((person.manual_utilization.totalPct / 100) * capacityHours) * 10) / 10;
+    return {
+      hours: reportedHours,
+      capacityHours: Math.round(capacityHours * 10) / 10,
+      pct: person.manual_utilization.totalPct,
+      band: (person.manual_utilization.status as CapacityBand) ?? "balanced",
+    };
+  }
+  const pct = round(clamp((hours / Math.max(1, capacityHours)) * 100, 0, 999));
+  return { hours, capacityHours: Math.round(capacityHours * 10) / 10, pct, band: bandFor(pct, thresholds) };
+}
 
-  const windowEnd = addDays(windowStart, PLANNING_WINDOW_DAYS - 1);
-  let load = 0;
-  store.data.tasks.forEach((tk) => {
-    if (!store.isAssignedTo(tk, personId) || tk.status === "done" || tk.status === "not-started") return;
-    const roleFactor = tk.assignee_id === personId ? 1 : 0.5;
-    const statusFactor = tk.status === "blocked" ? 0.6 : 1;
-    const span = taskWorkingDays(tk);
-    const overlapDays = span.filter((d) => d >= windowStart && d <= windowEnd).length;
-    if (overlapDays > 0) load += overlapDays * roleFactor * statusFactor;
-  });
+export type WeeklyCapacity = {
+  hours: number;
+  capacityHours: number;
+  pct: number | null;
+  band: CapacityBand | "unknown";
+};
 
-  const offDays = dayOffDaysInWindow(personId, windowStart, windowEnd, store.data.dayOff);
-  const effectiveBaseline = Math.max(1, person.capacity_baseline - offDays);
-  const pct = round(clamp((load / effectiveBaseline) * 100, 0, 999));
-
-  let band: CapacityBand;
-  if (pct > thresholds.overloaded) band = "overloaded";
-  else if (pct >= thresholds.needsSupport) band = "needs-support";
-  else if (pct >= thresholds.almostFull) band = "almost-full";
-  else if (pct >= thresholds.balanced) band = "balanced";
-  else band = "available";
-
-  return { pct, band };
+/**
+ * This week's actual hours vs. a person's weekly capacity, net of approved
+ * leave. Defers to a manually-reported weekly utilization when present,
+ * same as computeCapacity, so the two never disagree.
+ */
+export function computeWeeklyCapacity(
+  personId: string,
+  store: Store,
+  weekStart: Date = startOfWeek(today()),
+  thresholds: WorkloadThresholds = DEFAULT_WORKLOAD_THRESHOLDS
+): WeeklyCapacity {
+  const person = store.personById(personId);
+  const weekEnd = addDays(weekStart, 6);
+  const hours = computeLoadHours(personId, store, weekStart, weekEnd);
+  if (!person || person.weekly_capacity_hours == null) {
+    return { hours, capacityHours: DEFAULT_WEEKLY_CAPACITY_HOURS, pct: null, band: "unknown" };
+  }
+  const offDays = dayOffDaysInWindow(personId, weekStart, weekEnd, store.data.dayOff);
+  const effectiveCapacity = Math.max(1, person.weekly_capacity_hours - offDays * HOURS_PER_DAY);
+  if (person.manual_utilization) {
+    const reportedHours = Math.round(((person.manual_utilization.totalPct / 100) * effectiveCapacity) * 10) / 10;
+    return {
+      hours: reportedHours,
+      capacityHours: Math.round(effectiveCapacity * 10) / 10,
+      pct: person.manual_utilization.totalPct,
+      band: (person.manual_utilization.status as CapacityBand) ?? "balanced",
+    };
+  }
+  const pct = round(clamp((hours / effectiveCapacity) * 100, 0, 999));
+  return { hours, capacityHours: Math.round(effectiveCapacity * 10) / 10, pct, band: bandFor(pct, thresholds) };
 }
 
 export type Capacity = {
@@ -171,6 +229,12 @@ export type Capacity = {
   breakdown?: ManualUtilization["breakdown"];
 };
 
+/**
+ * A person's overall status for the current week -- the headline "how
+ * loaded are they" figure used for banding (Available/Balanced/.../
+ * Overloaded) across the app. See computeDailyCapacity/computeWeeklyCapacity
+ * for the literal "X/Y hours" figures shown on Team.
+ */
 export function computeCapacity(
   personId: string,
   store: Store,
@@ -201,7 +265,7 @@ export function computeCapacity(
     };
   }
 
-  if (person.capacity_baseline == null) {
+  if (person.weekly_capacity_hours == null) {
     const myProjectsEarly = store
       .projectsForPerson(personId)
       .filter((pj) => require_stageDone(pj, store) !== "done");
@@ -259,11 +323,11 @@ export function computeCapacity(
     };
   }
 
-  const load = computeLoad(personId, store);
-  const windowStart = today();
-  const windowEnd = addDays(windowStart, PLANNING_WINDOW_DAYS - 1);
-  const offDays = dayOffDaysInWindow(personId, windowStart, windowEnd, store.data.dayOff);
-  const effectiveBaseline = Math.max(1, person.capacity_baseline - offDays);
+  const weekStart = startOfWeek(today());
+  const weekEnd = addDays(weekStart, 6);
+  const load = computeLoadHours(personId, store, weekStart, weekEnd);
+  const offDays = dayOffDaysInWindow(personId, weekStart, weekEnd, store.data.dayOff);
+  const effectiveBaseline = Math.max(1, person.weekly_capacity_hours - offDays * HOURS_PER_DAY);
   const pct = round(clamp((load / effectiveBaseline) * 100, 0, 999));
   const myTasks = store.activeTasksForPerson(personId);
   const blocked = myTasks.filter((tk) => tk.status === "blocked");
@@ -311,7 +375,7 @@ export function computeCapacity(
     if (flags.tooManyTasks) reasons.push({ label: `${myTasks.length} active tasks at once`, tag: "load" });
     if (flags.tooManyProjects) reasons.push({ label: `${myProjects.length} active projects`, tag: "projects" });
     if (flags.urgent) reasons.push({ label: `${urgentCount} urgent deadlines`, tag: "urgent" });
-    if (offDays > 0) reasons.push({ label: `${offDays} day${offDays === 1 ? "" : "s"} off this window`, tag: "day-off" });
+    if (offDays > 0) reasons.push({ label: `${offDays} day${offDays === 1 ? "" : "s"} off this week`, tag: "day-off" });
     if (!reasons.length) reasons.push({ label: "Below full availability", tag: "low-availability" });
   }
 

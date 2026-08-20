@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { computeCapacity } from "@/lib/domain/capacity";
+import { computeCapacity, computeDailyCapacity, computeWeeklyCapacity } from "@/lib/domain/capacity";
 import { clamp, dayDiff, fromISO, today } from "@/lib/domain/dates";
 import { computeHealth } from "@/lib/domain/health";
 import { projectProgress } from "@/lib/domain/progress";
@@ -19,9 +19,9 @@ function employeeProjectSummary(personId: string, project: Project, store: Store
     null;
   const blocked = active.filter((tk) => tk.status === "blocked");
   const upcoming = active.length ? [...active].sort((a, b) => fromISO(a.due_date).getTime() - fromISO(b.due_date).getTime())[0] : null;
-  const remainingDays = active.reduce((s, tk) => s + (tk.remaining_days != null ? tk.remaining_days : tk.workload_days || 0), 0);
+  const remainingHours = active.reduce((s, tk) => s + (tk.remaining_hours != null ? tk.remaining_hours : tk.workload_hours || 0), 0);
   const role = project.owner_id === personId ? "Owner" : "Contributor";
-  return { project, myTasksInProj, completed, active, current, blocked, upcoming, remainingDays, role };
+  return { project, myTasksInProj, completed, active, current, blocked, upcoming, remainingHours, role };
 }
 
 function dueLabelText(due: Date) {
@@ -32,7 +32,7 @@ function dueLabelText(due: Date) {
 }
 
 function MyProjectCard({ summary, store }: { summary: ReturnType<typeof employeeProjectSummary>; store: Store }) {
-  const { project: p, myTasksInProj, completed, current, blocked, upcoming, remainingDays, role } = summary;
+  const { project: p, myTasksInProj, completed, current, blocked, upcoming, remainingHours, role } = summary;
   const tasks = store.tasksFor(p.id);
   const stage = computeStage(p, tasks);
   const health = computeHealth(p, tasks, store.data.blockers);
@@ -78,7 +78,7 @@ function MyProjectCard({ summary, store }: { summary: ReturnType<typeof employee
         </div>
         <div>
           <span className="myproj-lbl">Remaining workload</span>
-          <span className="myproj-val">{remainingDays}d</span>
+          <span className="myproj-val">{remainingHours}h</span>
         </div>
       </div>
       {blocked.length > 0 && (
@@ -104,6 +104,8 @@ export function EmployeeHome({
   const dueTodayOrOverdue = myTasks.filter((tk) => dayDiff(today(), fromISO(tk.due_date)) <= 0);
   const myBlockedTasks = myTasks.filter((tk) => tk.status === "blocked");
   const cap = computeCapacity(personId, store, thresholds);
+  const daily = computeDailyCapacity(personId, store, today(), thresholds);
+  const weekly = computeWeeklyCapacity(personId, store, undefined, thresholds);
   const summaries = myProjects
     .map((p) => employeeProjectSummary(personId, p, store))
     .sort((a, b) => {
@@ -175,7 +177,9 @@ export function EmployeeHome({
               <h2>My capacity</h2>
             </div>
             <div className="cap-bar-lbl">
-              Capacity used: <b>{cap.pct != null ? `${cap.pct}%` : "—"}</b> — current 2-week workload
+              Today: <b>{daily.pct != null ? `${daily.hours}/${daily.capacityHours} hours` : "—"}</b>
+              {" · "}
+              This week: <b>{weekly.pct != null ? `${weekly.hours}/${weekly.capacityHours} hours` : "—"}</b>
             </div>
             {cap.pct != null && (
               <div className="capacity-bar-wrap" style={{ marginBottom: 8 }}>
