@@ -1,5 +1,4 @@
-import type { Project, Task, WorkloadThresholds } from "@/lib/types";
-import { computeCapacity } from "./capacity";
+import type { Project, Task } from "@/lib/types";
 import { dayDiff, fromISO, today } from "./dates";
 import { computeHealth, projectElapsedPct } from "./health";
 import { computeNextSteps } from "./nextSteps";
@@ -20,7 +19,7 @@ export type NeedsAttentionItem = {
 
 const SEV_RANK: Record<string, number> = { critical: 0, warning: 1 };
 
-/** Shared project-risk read used by both "my priorities" and the company overview. */
+/** Project-risk read used when building "my priorities" for projects the person is involved in. */
 function projectRisk(store: Store, p: Project): { why: string; impact: string; severity: "critical" | "warning" } | null {
   const tasks = store.tasksFor(p.id);
   const health = computeHealth(p, tasks, store.data.blockers);
@@ -57,13 +56,12 @@ function projectRisk(store: Store, p: Project): { why: string; impact: string; s
  * What does this specific person personally need to know, review, decide,
  * or act on? Every item here requires real involvement — ownership, team
  * membership, being the assignee/approver, or being @mentioned. General
- * company-wide risk (an overloaded teammate, a project you have nothing to
- * do with) belongs in buildCompanyOverview instead, never here.
+ * company-wide risk (an overloaded teammate, a project they have nothing
+ * to do with) is deliberately excluded.
  */
 export function buildNeedsAttention(
   store: Store,
   ceoId: string | null,
-  thresholds?: WorkloadThresholds,
   dismissedKeys?: Set<string>
 ): NeedsAttentionItem[] {
   const items: NeedsAttentionItem[] = [];
@@ -158,47 +156,4 @@ export function buildNeedsAttention(
 
   const visible = dismissedKeys ? items.filter((i) => !dismissedKeys.has(`${i.kind}:${i.ref}`)) : items;
   return visible.sort((a, b) => SEV_RANK[a.severity] - SEV_RANK[b.severity]);
-}
-
-/**
- * Company-wide signals that aren't necessarily anyone's personal
- * responsibility -- an overloaded teammate, a project at risk regardless
- * of who's on it. Shown separately from personal priorities, never mixed
- * into them.
- */
-export function buildCompanyOverview(store: Store, thresholds?: WorkloadThresholds): NeedsAttentionItem[] {
-  const items: NeedsAttentionItem[] = [];
-
-  store.data.projects.forEach((p) => {
-    const risk = projectRisk(store, p);
-    if (!risk) return;
-    const owner = store.personById(p.owner_id);
-    items.push({
-      severity: risk.severity,
-      kind: "project",
-      ref: p.id,
-      projectId: p.id,
-      title: p.name,
-      why: risk.why,
-      impact: risk.impact,
-      action: `Review with ${owner ? owner.name.split(" ")[0] : "the owner"}`,
-    });
-  });
-
-  store.capacityRoster().forEach((person) => {
-    const cap = computeCapacity(person.id, store, thresholds);
-    if (cap.status === "overloaded") {
-      items.push({
-        severity: "critical",
-        kind: "person",
-        ref: person.id,
-        title: `${person.name} is overloaded`,
-        why: `${cap.pct}% of capacity`,
-        impact: cap.reasons[0]?.label || "Risk of missed deadlines",
-        action: "Reallocate a task",
-      });
-    }
-  });
-
-  return items.sort((a, b) => SEV_RANK[a.severity] - SEV_RANK[b.severity]);
 }

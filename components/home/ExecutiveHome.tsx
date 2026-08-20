@@ -2,7 +2,7 @@ import Link from "next/link";
 import { computeCapacity } from "@/lib/domain/capacity";
 import { dayDiff, fmt, fromISO, today } from "@/lib/domain/dates";
 import { computeHealth } from "@/lib/domain/health";
-import { buildCompanyOverview, buildNeedsAttention } from "@/lib/domain/needsAttention";
+import { buildNeedsAttention } from "@/lib/domain/needsAttention";
 import { computeStage } from "@/lib/domain/stage";
 import type { Store } from "@/lib/domain/store";
 import { overdueTaskCount, portfolioStats } from "@/lib/domain/stats";
@@ -29,8 +29,7 @@ export function ExecutiveHome({
   const capRows = store.capacityRoster().map((p) => ({ person: p, cap: computeCapacity(p.id, store, thresholds) }));
   const overloadedCount = capRows.filter((r) => r.cap.status === "overloaded").length;
   const overdueTasks = overdueTaskCount(store);
-  const attnItems = buildNeedsAttention(store, ceoId, thresholds, dismissedKeys);
-  const overviewItems = buildCompanyOverview(store, thresholds);
+  const attnItems = buildNeedsAttention(store, ceoId, dismissedKeys);
   const decisionsRequired = attnItems.filter((a) => a.kind === "approval").length;
   const criticalDeadlines = store.data.projects.filter((p) => {
     const tasks = store.tasksFor(p.id);
@@ -114,7 +113,7 @@ export function ExecutiveHome({
         </Card>
       </div>
 
-      <PriorityPanel priorityItems={attnItems} overviewItems={overviewItems} />
+      <PriorityPanel priorityItems={attnItems} />
 
       <div className="ceo-section">
         <div className="panel-head-row">

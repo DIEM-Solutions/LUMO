@@ -6,24 +6,21 @@ import { getCurrentPerson } from "@/lib/auth/session";
 import { loadPortalData } from "@/lib/data/portal";
 import { createStore } from "@/lib/domain/store";
 import { fmt, fromISO } from "@/lib/domain/dates";
-import { buildCompanyOverview, buildNeedsAttention } from "@/lib/domain/needsAttention";
+import { buildNeedsAttention } from "@/lib/domain/needsAttention";
 import { buildRecapRows } from "@/lib/domain/recap";
 import { portfolioStats } from "@/lib/domain/stats";
-import { loadAppSettings } from "@/lib/data/settings";
 import { loadDismissedAttentionKeys } from "@/lib/data/attention";
 
 export default async function RecapPage() {
   const person = await getCurrentPerson();
   if (!person) redirect("/login");
 
-  const [data, settings, dismissedKeys] = await Promise.all([loadPortalData(), loadAppSettings(), loadDismissedAttentionKeys()]);
+  const [data, dismissedKeys] = await Promise.all([loadPortalData(), loadDismissedAttentionKeys()]);
   const store = createStore(data);
-  const thresholds = settings.workload_thresholds;
 
   const stats = portfolioStats(store);
   const ceoId = data.people.find((p) => p.role_type === "ceo")?.id ?? null;
-  const attention = buildNeedsAttention(store, ceoId, thresholds, dismissedKeys);
-  const overview = buildCompanyOverview(store, thresholds);
+  const attention = buildNeedsAttention(store, ceoId, dismissedKeys);
   const rows = buildRecapRows(store);
 
   return (
@@ -50,7 +47,7 @@ export default async function RecapPage() {
         </div>
 
         <div style={{ marginBottom: 24 }}>
-          <PriorityPanel priorityItems={attention} overviewItems={overview} />
+          <PriorityPanel priorityItems={attention} />
         </div>
 
         <div className="panel-head-row">
