@@ -137,10 +137,9 @@ export type DailyCapacity = {
 };
 
 /**
- * Today's actual hours vs. a person's daily capacity (weekly capacity / 5).
- * If the person has a manually-reported weekly utilization, that figure
- * takes precedence -- same rule computeCapacity follows -- so the hours
- * shown here never contradict their status badge elsewhere in the app.
+ * Today's actual hours vs. a person's daily capacity (weekly capacity / 5),
+ * always computed live from real task data -- never frozen by a manually
+ * reported number.
  */
 export function computeDailyCapacity(
   personId: string,
@@ -157,15 +156,6 @@ export function computeDailyCapacity(
     return { hours, capacityHours: 0, pct: hours > 0 ? 999 : 0, band: hours > 0 ? "overloaded" : "available" };
   }
   const capacityHours = person.weekly_capacity_hours / WORK_DAYS_PER_WEEK;
-  if (person.manual_utilization) {
-    const reportedHours = Math.round(((person.manual_utilization.totalPct / 100) * capacityHours) * 10) / 10;
-    return {
-      hours: reportedHours,
-      capacityHours: Math.round(capacityHours * 10) / 10,
-      pct: person.manual_utilization.totalPct,
-      band: (person.manual_utilization.status as CapacityBand) ?? "balanced",
-    };
-  }
   const pct = round(clamp((hours / Math.max(1, capacityHours)) * 100, 0, 999));
   return { hours, capacityHours: Math.round(capacityHours * 10) / 10, pct, band: bandFor(pct, thresholds) };
 }
@@ -179,8 +169,8 @@ export type WeeklyCapacity = {
 
 /**
  * This week's actual hours vs. a person's weekly capacity, net of approved
- * leave. Defers to a manually-reported weekly utilization when present,
- * same as computeCapacity, so the two never disagree.
+ * leave -- always computed live from real task data, never frozen by a
+ * manually reported number.
  */
 export function computeWeeklyCapacity(
   personId: string,
@@ -196,15 +186,6 @@ export function computeWeeklyCapacity(
   }
   const offDays = dayOffDaysInWindow(personId, weekStart, weekEnd, store.data.dayOff);
   const effectiveCapacity = Math.max(1, person.weekly_capacity_hours - offDays * HOURS_PER_DAY);
-  if (person.manual_utilization) {
-    const reportedHours = Math.round(((person.manual_utilization.totalPct / 100) * effectiveCapacity) * 10) / 10;
-    return {
-      hours: reportedHours,
-      capacityHours: Math.round(effectiveCapacity * 10) / 10,
-      pct: person.manual_utilization.totalPct,
-      band: (person.manual_utilization.status as CapacityBand) ?? "balanced",
-    };
-  }
   const pct = round(clamp((hours / effectiveCapacity) * 100, 0, 999));
   return { hours, capacityHours: Math.round(effectiveCapacity * 10) / 10, pct, band: bandFor(pct, thresholds) };
 }
@@ -290,37 +271,6 @@ export function computeCapacity(
         return d >= 0 && d <= NEAR_WINDOW_DAYS;
       }).length,
       source: "not-provided",
-    };
-  }
-
-  if (person.manual_utilization) {
-    const mu = person.manual_utilization;
-    const myProjectsEarly = store
-      .projectsForPerson(personId)
-      .filter((pj) => require_stageDone(pj, store) !== "done");
-    const band = (mu.status as CapacityBand) ?? "balanced";
-    return {
-      personId,
-      load: null,
-      pct: mu.totalPct,
-      status: mu.status,
-      band,
-      needsAttention: mu.status === "needs-support" || mu.status === "overloaded",
-      awayNow: awayNowEarly,
-      offDaysInWindow: 0,
-      reasons: [],
-      label: CAP_STATUS_LABEL[mu.status] ?? mu.status,
-      activeTaskCount: myTasksEarly.length,
-      projectCount: myProjectsEarly.length,
-      blockedCount: myTasksEarly.filter((tk) => tk.status === "blocked").length,
-      overdueCount: myTasksEarly.filter((tk) => dayDiff(today(), fromISO(tk.due_date)) < 0).length,
-      upcomingDeadlines: myTasksEarly.filter((tk) => {
-        const d = dayDiff(today(), fromISO(tk.due_date));
-        return d >= 0 && d <= NEAR_WINDOW_DAYS;
-      }).length,
-      source: "reported",
-      reportedWeekStart: mu.weekStart,
-      breakdown: mu.breakdown,
     };
   }
 
