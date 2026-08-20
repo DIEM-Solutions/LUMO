@@ -28,6 +28,74 @@ import { useToast } from "@/components/ui/Toast";
 import { setTaskStatus } from "@/app/(portal)/projects/actions";
 import type { Blocker, Task, TaskStatus, TaskStatusLabels } from "@/lib/types";
 
+function TaskRow({
+  tk,
+  store,
+  taskStatusLabels,
+  pending,
+  onToggle,
+  onOpen,
+  subtaskCount,
+  indent,
+}: {
+  tk: Task;
+  store: ReturnType<typeof createStore>;
+  taskStatusLabels: TaskStatusLabels;
+  pending: boolean;
+  onToggle: (e: React.MouseEvent) => void;
+  onOpen: () => void;
+  subtaskCount?: number;
+  indent?: boolean;
+}) {
+  const assignee = store.personById(tk.assignee_id);
+  const assignee2 = store.personById(tk.assignee2_id);
+  return (
+    <div className="card" style={{ cursor: "pointer", padding: indent ? 14 : undefined }} onClick={onOpen}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <button
+            type="button"
+            className={`task-check${tk.status === "done" ? " checked" : ""}`}
+            onClick={onToggle}
+            disabled={pending}
+            aria-label={tk.status === "done" ? "Mark as not started" : "Mark as complete"}
+            title={tk.status === "done" ? "Mark as not started" : "Mark as complete"}
+          >
+            {tk.status === "done" && (
+              <svg viewBox="0 0 16 16" width="11" height="11" fill="none">
+                <path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+          <div>
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: indent ? 13 : 14,
+                textDecoration: tk.status === "done" ? "line-through" : "none",
+                opacity: tk.status === "done" ? 0.6 : 1,
+              }}
+            >
+              {tk.name}
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
+              Due {fmt(fromISO(tk.due_date))} · {tk.weight}% weight
+              {subtaskCount ? ` · ${subtaskCount} subtask${subtaskCount === 1 ? "" : "s"}` : ""}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="kc-people">
+            <Avatar person={assignee} size="sm" />
+            {assignee2 && <Avatar person={assignee2} size="sm" />}
+          </div>
+          <TaskStatusPill status={tk.status} labels={taskStatusLabels} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ProjectDetailClient({
   data,
   projectId,
@@ -46,6 +114,7 @@ export function ProjectDetailClient({
   const store = useMemo(() => createStore(data), [data]);
   const project = store.projectById(projectId)!;
   const tasks = store.tasksFor(projectId);
+  const topLevelTasks = store.topLevelTasksFor(projectId);
   const blockers = data.blockers.filter((b) => b.project_id === projectId);
   const notedTasks = tasks.filter((tk) => tk.notes && tk.notes.trim().length > 0);
   const team = (project.team_ids ?? []).map((id) => store.personById(id)).filter(Boolean);
@@ -143,61 +212,43 @@ export function ProjectDetailClient({
             + Add task
           </button>
         </div>
-        {tasks.length ? (
+        {topLevelTasks.length ? (
           <div className="stack-gap">
-            {tasks.map((tk) => {
-              const assignee = store.personById(tk.assignee_id);
-              const assignee2 = store.personById(tk.assignee2_id);
+            {topLevelTasks.map((tk) => {
+              const subtasks = store.subtasksFor(tk.id);
               return (
-                <div
-                  key={tk.id}
-                  className="card"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => {
-                    setEditingTask(tk);
-                    setTaskModalOpen(true);
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <button
-                        type="button"
-                        className={`task-check${tk.status === "done" ? " checked" : ""}`}
-                        onClick={(e) => handleToggleTaskDone(tk, e)}
-                        disabled={pendingTaskIds.has(tk.id)}
-                        aria-label={tk.status === "done" ? "Mark as not started" : "Mark as complete"}
-                        title={tk.status === "done" ? "Mark as not started" : "Mark as complete"}
-                      >
-                        {tk.status === "done" && (
-                          <svg viewBox="0 0 16 16" width="11" height="11" fill="none">
-                            <path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        )}
-                      </button>
-                      <div>
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            fontSize: 14,
-                            textDecoration: tk.status === "done" ? "line-through" : "none",
-                            opacity: tk.status === "done" ? 0.6 : 1,
+                <div key={tk.id}>
+                  <TaskRow
+                    tk={tk}
+                    store={store}
+                    taskStatusLabels={taskStatusLabels}
+                    pending={pendingTaskIds.has(tk.id)}
+                    onToggle={(e) => handleToggleTaskDone(tk, e)}
+                    onOpen={() => {
+                      setEditingTask(tk);
+                      setTaskModalOpen(true);
+                    }}
+                    subtaskCount={subtasks.length}
+                  />
+                  {subtasks.length > 0 && (
+                    <div className="stack-gap" style={{ gap: 8, marginTop: 8, marginLeft: 30 }}>
+                      {subtasks.map((sub) => (
+                        <TaskRow
+                          key={sub.id}
+                          tk={sub}
+                          store={store}
+                          taskStatusLabels={taskStatusLabels}
+                          pending={pendingTaskIds.has(sub.id)}
+                          onToggle={(e) => handleToggleTaskDone(sub, e)}
+                          onOpen={() => {
+                            setEditingTask(sub);
+                            setTaskModalOpen(true);
                           }}
-                        >
-                          {tk.name}
-                        </div>
-                        <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
-                          Due {fmt(fromISO(tk.due_date))} · {tk.weight}% weight
-                        </div>
-                      </div>
+                          indent
+                        />
+                      ))}
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div className="kc-people">
-                        <Avatar person={assignee} size="sm" />
-                        {assignee2 && <Avatar person={assignee2} size="sm" />}
-                      </div>
-                      <TaskStatusPill status={tk.status} labels={taskStatusLabels} />
-                    </div>
-                  </div>
+                  )}
                 </div>
               );
             })}
@@ -288,6 +339,7 @@ export function ProjectDetailClient({
           task={editingTask}
           people={data.people}
           projects={data.projects}
+          allTasks={data.tasks}
           presetProjectId={projectId}
           statusLabels={taskStatusLabels}
         />

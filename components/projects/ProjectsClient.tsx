@@ -231,6 +231,7 @@ export function ProjectsClient({
           task={editingTask}
           people={data.people}
           projects={data.projects}
+          allTasks={data.tasks}
           forceStatus={forceStatus}
           statusLabels={taskStatusLabels}
         />

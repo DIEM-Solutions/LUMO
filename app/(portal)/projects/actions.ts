@@ -238,6 +238,7 @@ export type TaskFormInput = {
   approvalPersonId: string | null;
   dependency: string;
   notes: string;
+  parentTaskId: string | null;
 };
 
 export async function createTask(input: TaskFormInput) {
@@ -261,6 +262,7 @@ export async function createTask(input: TaskFormInput) {
       approval_person_id: input.approvalPersonId,
       dependency: input.dependency,
       notes: input.notes,
+      parent_task_id: input.parentTaskId,
     })
     .select()
     .single();
@@ -326,6 +328,7 @@ export async function updateTask(id: string, input: TaskFormInput) {
       approval_person_id: input.approvalPersonId,
       dependency: input.dependency,
       notes: input.notes,
+      parent_task_id: input.parentTaskId,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

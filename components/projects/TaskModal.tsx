@@ -23,8 +23,10 @@ export function TaskModal({
   task,
   people,
   projects,
+  allTasks,
   presetProjectId,
   presetPersonId,
+  presetParentTaskId,
   forceStatus,
   statusLabels,
 }: {
@@ -32,8 +34,10 @@ export function TaskModal({
   task: Task | null;
   people: Person[];
   projects: Project[];
+  allTasks: Task[];
   presetProjectId?: string;
   presetPersonId?: string;
+  presetParentTaskId?: string;
   forceStatus?: TaskStatus;
   statusLabels?: TaskStatusLabels;
 }) {
@@ -61,8 +65,18 @@ export function TaskModal({
   const [approvalPersonId, setApprovalPersonId] = useState(task?.approval_person_id ?? "");
   const [dependency, setDependency] = useState(task?.dependency ?? "");
   const [notes, setNotes] = useState(task?.notes ?? "");
+  const [parentTaskId, setParentTaskId] = useState(task?.parent_task_id ?? presetParentTaskId ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // A task can be a parent (has subtasks under it) or a subtask (has a
+  // parent) but not both -- keeps the hierarchy to one level, which covers
+  // "split into as many parts as needed" without open-ended nesting.
+  const parentOptions = allTasks.filter(
+    (t) => t.project_id === projectId && t.id !== task?.id && !t.parent_task_id
+  );
+  const hasSubtasks = !!task && allTasks.some((t) => t.parent_task_id === task.id);
+  const subtasks = task ? allTasks.filter((t) => t.parent_task_id === task.id) : [];
 
   async function handleSave(overrideStatus?: TaskStatus) {
     const effectiveStatus = overrideStatus ?? status;
@@ -91,6 +105,7 @@ export function TaskModal({
       approvalPersonId: approvalPersonId || null,
       dependency: dependency.trim(),
       notes: notes.trim(),
+      parentTaskId: hasSubtasks ? null : parentTaskId || null,
     };
     try {
       if (task) {
@@ -269,6 +284,27 @@ export function TaskModal({
           <input type="text" value={dependency} onChange={(e) => setDependency(e.target.value)} placeholder="e.g. Waiting on client data" />
         </div>
       </div>
+      {hasSubtasks ? (
+        <div className="field">
+          <label>Subtasks ({subtasks.length})</label>
+          <div className="field-hint">
+            This task is split into {subtasks.length} subtask{subtasks.length === 1 ? "" : "s"} — each has its own assignee, status and workload. Add more anytime with &quot;+ Add task&quot;, setting this as the parent.
+          </div>
+        </div>
+      ) : (
+        <div className="field">
+          <label>Parent task (optional)</label>
+          <select value={parentTaskId} onChange={(e) => setParentTaskId(e.target.value)}>
+            <option value="">— None, this is a standalone task —</option>
+            {parentOptions.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <div className="field-hint">Set this to split a task into parts — pick the task being split as the parent here.</div>
+        </div>
+      )}
       <div className="field">
         <label>Notes</label>
         <MentionTextarea value={notes} onChange={setNotes} people={people} placeholder="Any context worth logging — type @ to mention someone" />

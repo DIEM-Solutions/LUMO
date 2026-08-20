@@ -89,6 +89,7 @@ export function PlanningClient({
           task={editingTask}
           people={data.people}
           projects={data.projects}
+          allTasks={data.tasks}
           presetPersonId={presetPersonId}
           statusLabels={taskStatusLabels}
         />

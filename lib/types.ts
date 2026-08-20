@@ -103,6 +103,7 @@ export type Task = {
   dependency: string;
   remaining_hours: number | null;
   approval_decision: ApprovalDecision | null;
+  parent_task_id: string | null;
   created_at: string;
   updated_at: string;
 };

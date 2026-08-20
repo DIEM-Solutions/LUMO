@@ -14,6 +14,9 @@ export function createStore(data: PortalData) {
   const projectById = (id: string | null | undefined) =>
     data.projects.find((p) => p.id === id) ?? null;
   const tasksFor = (projectId: string) => data.tasks.filter((t) => t.project_id === projectId);
+  const topLevelTasksFor = (projectId: string) =>
+    data.tasks.filter((t) => t.project_id === projectId && !t.parent_task_id);
+  const subtasksFor = (taskId: string) => data.tasks.filter((t) => t.parent_task_id === taskId);
   const isAssignedTo = (task: Task, personId: string) =>
     task.assignee_id === personId || task.assignee2_id === personId;
   const openBlockersFor = (projectId: string) =>
@@ -30,6 +33,8 @@ export function createStore(data: PortalData) {
     personById,
     projectById,
     tasksFor,
+    topLevelTasksFor,
+    subtasksFor,
     isAssignedTo,
     openBlockersFor,
     projectsForPerson,
