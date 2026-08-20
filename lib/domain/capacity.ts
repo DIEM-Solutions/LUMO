@@ -110,20 +110,21 @@ function bandFor(pct: number, thresholds: WorkloadThresholds): CapacityBand {
 
 /**
  * Hours of work a person is carrying within an arbitrary date window, from
- * tasks actually underway. Not-started and done tasks never contribute --
- * a scheduled-but-untouched task shouldn't make someone look busy before
- * any work has actually happened on it.
+ * tasks actually underway right now. Only "in-progress" counts -- not
+ * started (no work has happened yet) and blocked (work has stalled, so it
+ * isn't occupying the person's time right now) are both excluded, same as
+ * done. A blocked or not-started task still shows up as a flag/reason
+ * elsewhere on the capacity card, it just doesn't count toward the load %.
  */
 export function computeLoadHours(personId: string, store: Store, windowStart: Date, windowEnd: Date): number {
   let hours = 0;
   store.data.tasks.forEach((tk) => {
-    if (!store.isAssignedTo(tk, personId) || tk.status === "done" || tk.status === "not-started") return;
+    if (!store.isAssignedTo(tk, personId) || tk.status !== "in-progress") return;
     const roleFactor = tk.assignee_id === personId ? 1 : 0.5;
-    const statusFactor = tk.status === "blocked" ? 0.6 : 1;
     const perDay = taskHoursPerDay(tk);
     const span = taskWorkingDays(tk);
     const overlapDays = span.filter((d) => d >= windowStart && d <= windowEnd).length;
-    if (overlapDays > 0) hours += overlapDays * perDay * roleFactor * statusFactor;
+    if (overlapDays > 0) hours += overlapDays * perDay * roleFactor;
   });
   return Math.round(hours * 10) / 10;
 }
