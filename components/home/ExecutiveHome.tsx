@@ -120,7 +120,7 @@ export function ExecutiveHome({
           <h2>Recent activity</h2>
         </div>
         <Card>
-          <ActivityFeedList entries={activity} projects={store.data.projects} limit={8} />
+          <ActivityFeedList entries={activity} projects={store.data.projects} />
         </Card>
       </div>
     </>

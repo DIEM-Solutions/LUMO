@@ -19,7 +19,7 @@ export default async function HomePage() {
 
   const [data, activity, settings, dismissedKeys] = await Promise.all([
     loadPortalData(),
-    loadRecentActivity(12),
+    loadRecentActivity(40),
     loadAppSettings(),
     isExec ? loadDismissedAttentionKeys() : Promise.resolve(new Set<string>()),
   ]);

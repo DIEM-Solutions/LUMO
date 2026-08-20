@@ -150,7 +150,7 @@ export function EmployeeHome({
             <div className="panel-head-row">
               <h2>Recent activity</h2>
             </div>
-            <ActivityFeedList entries={activity} projects={store.data.projects} limit={6} />
+            <ActivityFeedList entries={activity} projects={store.data.projects} />
           </Card>
           <Card>
             <div className="panel-head-row">
