@@ -92,6 +92,16 @@ export function TeamClient({
   const projectColor = new Map<string, string>();
   data.projects.forEach((p, i) => projectColor.set(p.id, DISTRIBUTION_PALETTE[i % DISTRIBUTION_PALETTE.length]));
 
+  const distributionByPerson = rows
+    .filter((r) => r.person.role_type !== "ceo")
+    .map((r) => ({ person: r.person, dist: workloadDistribution(r.person.id, store, projectColor) }));
+  const legendProjects = new Map<string, string>();
+  distributionByPerson.forEach(({ dist }) =>
+    dist.forEach((d) => {
+      if (d.project) legendProjects.set(d.project.id, d.project.name);
+    })
+  );
+
   return (
     <>
       <div className="kpi-row" style={{ marginBottom: 22 }}>
@@ -202,30 +212,38 @@ export function TeamClient({
             <div className="panel-head-row">
               <h2>Workload distribution</h2>
             </div>
+            <div className="field-hint" style={{ marginBottom: 10 }}>Share of each person&apos;s open (not-done) tasks, by project.</div>
+            {legendProjects.size > 0 && (
+              <div className="people-chip-row" style={{ marginBottom: 14 }}>
+                {Array.from(legendProjects.entries()).map(([id, name]) => (
+                  <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "var(--ink-soft)" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: projectColor.get(id), flexShrink: 0 }} />
+                    {name}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="stack-gap" style={{ gap: 12 }}>
-              {rows.filter((r) => r.person.role_type !== "ceo").map((r) => {
-                const dist = workloadDistribution(r.person.id, store, projectColor);
-                return (
-                  <div key={r.person.id}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-                      <Avatar person={r.person} size="sm" />
-                      <span style={{ fontSize: 12, fontWeight: 700 }}>{r.person.name.split(" ")[0]}</span>
-                    </div>
-                    {dist.length ? (
-                      <div
-                        className="dist-bar"
-                        title={dist.map((d) => `${d.project?.name ?? "—"}: ${d.pct}%`).join(" · ")}
-                      >
-                        {dist.map((d) => (
-                          <div key={d.projectId} style={{ width: `${d.pct}%`, background: d.color }} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="dist-bar dist-bar-empty" />
-                    )}
+              {distributionByPerson.map(({ person, dist }) => (
+                <div key={person.id}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                    <Avatar person={person} size="sm" />
+                    <span style={{ fontSize: 12, fontWeight: 700 }}>{person.name.split(" ")[0]}</span>
                   </div>
-                );
-              })}
+                  {dist.length ? (
+                    <div
+                      className="dist-bar"
+                      title={dist.map((d) => `${d.project?.name ?? "—"}: ${d.pct}%`).join(" · ")}
+                    >
+                      {dist.map((d) => (
+                        <div key={d.projectId} style={{ width: `${d.pct}%`, background: d.color }} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="dist-bar dist-bar-empty" />
+                  )}
+                </div>
+              ))}
             </div>
           </Card>
           <Card>

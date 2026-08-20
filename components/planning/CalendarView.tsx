@@ -108,6 +108,14 @@ export function CalendarView({
         </div>
       </div>
 
+      <div className="plan-legend">
+        <span><i className="pl-swatch not-started" />Not started</span>
+        <span><i className="pl-swatch in-progress" />In progress</span>
+        <span><i className="pl-swatch blocked" />Blocked</span>
+        <span><i className="pl-swatch dayoff" />Day off</span>
+        <span><i className="pl-swatch holiday" />Holiday</span>
+      </div>
+
       {viewMode === "month" && (
         <div
           className="cal-month-grid"
@@ -140,9 +148,16 @@ export function CalendarView({
                   ))}
                   {evs.slice(0, 3).map((tk) => {
                     const c = eventColor(tk.status);
+                    const assignee = store.personById(tk.assignee_id);
                     return (
-                      <div key={tk.id} className="cal-event" style={{ background: c.bg, color: c.fg, cursor: "pointer" }} onClick={() => onOpenTask(tk)}>
-                        {tk.name}
+                      <div
+                        key={tk.id}
+                        className="cal-event"
+                        style={{ background: c.bg, color: c.fg, cursor: "pointer" }}
+                        title={`${tk.name}${assignee ? ` · ${assignee.name}` : ""}`}
+                        onClick={() => onOpenTask(tk)}
+                      >
+                        {tk.name}{assignee ? ` · ${assignee.name.split(" ")[0]}` : ""}
                       </div>
                     );
                   })}

@@ -513,6 +513,7 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 .pl-swatch.in-progress{background:var(--stage-prog-bg); box-shadow:inset 0 0 0 1px var(--stage-prog-fg);}
 .pl-swatch.blocked{background:var(--stage-blocked-bg); box-shadow:inset 0 0 0 1px var(--health-blocked);}
 .pl-swatch.dayoff{background:repeating-linear-gradient(135deg, #F0EAF8, #F0EAF8 3px, #E4DAF2 3px, #E4DAF2 6px);}
+.pl-swatch.holiday{background:#E3F6F2; box-shadow:inset 0 0 0 1px var(--diem-teal);}
 
 /* ================= CALENDAR ================= */
 .cal-month-grid{display:grid; grid-template-columns:repeat(7,1fr);}

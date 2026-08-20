@@ -74,6 +74,7 @@ export function ExecutiveHome({
           <div className="panel-head-row">
             <h2>Portfolio health</h2>
           </div>
+          <div className="field-hint" style={{ marginBottom: 10 }}>Every active project, by current health status.</div>
           <DonutWithLegend segments={healthSegments} centerLabel="projects" />
         </Card>
         <Card>
@@ -81,12 +82,14 @@ export function ExecutiveHome({
             <h2>Team capacity</h2>
             <Link href="/team" className="linklike">Open →</Link>
           </div>
+          <div className="field-hint" style={{ marginBottom: 10 }}>Everyone&apos;s status for this week — see Team for exact hours.</div>
           <DonutWithLegend segments={capSegments} centerLabel="people" />
         </Card>
         <Card>
           <div className="panel-head-row">
             <h2>Upcoming deadlines</h2>
           </div>
+          <div className="field-hint" style={{ marginBottom: 10 }}>The 4 soonest project due dates — bar color shows health.</div>
           <div className="timeline-list">
             {upcomingDeadlines.length ? (
               upcomingDeadlines.map((p) => {
@@ -96,7 +99,7 @@ export function ExecutiveHome({
                 const color = health === "blocked" ? "var(--health-blocked)" : health === "at-risk" ? "var(--health-atrisk)" : "var(--diem-blue)";
                 return (
                   <Link href="/projects" className="timeline-row" key={p.id} style={{ cursor: "pointer" }}>
-                    <span className="tl-date">{fmt(fromISO(p.end_date!))}</span>
+                    <span className="tl-date">{fmt(fromISO(p.end_date!))}{d >= 0 ? ` · ${d}d` : ""}</span>
                     <span className="tl-name">{p.name}</span>
                     <div className="tl-bar">
                       <div style={{ width: `${w}%`, background: color }} />
