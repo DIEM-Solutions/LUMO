@@ -20,17 +20,20 @@ const ABSENCE_LOOKAHEAD_DAYS = 14;
 
 const DISTRIBUTION_PALETTE = ["var(--diem-blue)", "var(--diem-teal)", "var(--diem-yellow)", "var(--diem-purple)", "var(--diem-orange)"];
 
+// Live, not static: only counts tasks actually in progress right now, and
+// weights each project by real hours (not a plain task count), matching
+// the same "in-progress only" rule computeLoadHours uses for capacity.
 function workloadDistribution(personId: string, store: ReturnType<typeof createStore>, projectColor: Map<string, string>) {
-  const tasks = store.activeTasksForPerson(personId);
+  const tasks = store.activeTasksForPerson(personId).filter((tk) => tk.status === "in-progress");
   if (!tasks.length) return [];
-  const counts = new Map<string, number>();
-  tasks.forEach((tk) => counts.set(tk.project_id, (counts.get(tk.project_id) ?? 0) + 1));
-  const total = tasks.length;
-  return [...counts.entries()]
-    .map(([projectId, count]) => ({
+  const hoursByProject = new Map<string, number>();
+  tasks.forEach((tk) => hoursByProject.set(tk.project_id, (hoursByProject.get(tk.project_id) ?? 0) + tk.workload_hours));
+  const total = tasks.reduce((s, tk) => s + tk.workload_hours, 0) || 1;
+  return [...hoursByProject.entries()]
+    .map(([projectId, hours]) => ({
       projectId,
       project: store.projectById(projectId),
-      pct: round((count / total) * 100),
+      pct: round((hours / total) * 100),
       color: projectColor.get(projectId) ?? "var(--ink-faint)",
     }))
     .sort((a, b) => b.pct - a.pct);
@@ -212,7 +215,7 @@ export function TeamClient({
             <div className="panel-head-row">
               <h2>Workload distribution</h2>
             </div>
-            <div className="field-hint" style={{ marginBottom: 10 }}>Share of each person&apos;s open (not-done) tasks, by project.</div>
+            <div className="field-hint" style={{ marginBottom: 10 }}>Hours currently in progress for each person, by project — live, updates as work happens.</div>
             {legendProjects.size > 0 && (
               <div className="people-chip-row" style={{ marginBottom: 14 }}>
                 {Array.from(legendProjects.entries()).map(([id, name]) => (

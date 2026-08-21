@@ -4,7 +4,7 @@ export function DonutWithLegend({
   segments,
   centerLabel,
 }: {
-  segments: { label: string; value: number; color: string }[];
+  segments: { label: string; value: number; color: string; names?: string[] }[];
   centerLabel: string;
 }) {
   const total = segments.reduce((s, seg) => s + seg.value, 0) || 1;
@@ -15,7 +15,7 @@ export function DonutWithLegend({
       <Donut segments={donutSegments} centerNum={total} centerLabel={centerLabel} />
       <div className="donut-legend">
         {segments.map((seg) => (
-          <div className="li" key={seg.label}>
+          <div className={`li${seg.names?.length ? " has-names" : ""}`} key={seg.label}>
             <span className="li-label">
               <span className="sw" style={{ background: seg.color }} />
               {seg.label}
@@ -24,6 +24,7 @@ export function DonutWithLegend({
               <span className="li-count">{seg.value}</span>
               <span className="li-pct">{Math.round((seg.value / total) * 100)}%</span>
             </span>
+            {seg.names && seg.names.length > 0 && <div className="li-tooltip">{seg.names.join(", ")}</div>}
           </div>
         ))}
       </div>

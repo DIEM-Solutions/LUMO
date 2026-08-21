@@ -37,15 +37,22 @@ export function ExecutiveHome({
     return computeStage(p, tasks) !== "done" && daysToEnd >= 0 && daysToEnd <= 14 && computeHealth(p, tasks, store.data.blockers) !== "on-track";
   }).length;
 
+  const projectsByHealth = (h: "on-track" | "at-risk" | "blocked") =>
+    store.data.projects
+      .filter((p) => computeHealth(p, store.tasksFor(p.id), store.data.blockers) === h)
+      .map((p) => p.name);
+  const peopleByBands = (bands: string[]) =>
+    capRows.filter((r) => bands.includes(r.cap.status)).map((r) => r.person.name);
+
   const healthSegments = [
-    { label: "On track", value: stats.healthCounts["on-track"], color: "var(--health-ontrack)" },
-    { label: "At risk", value: stats.healthCounts["at-risk"], color: "var(--health-atrisk)" },
-    { label: "Blocked", value: stats.healthCounts.blocked, color: "var(--health-blocked)" },
+    { label: "On track", value: stats.healthCounts["on-track"], color: "var(--health-ontrack)", names: projectsByHealth("on-track") },
+    { label: "At risk", value: stats.healthCounts["at-risk"], color: "var(--health-atrisk)", names: projectsByHealth("at-risk") },
+    { label: "Blocked", value: stats.healthCounts.blocked, color: "var(--health-blocked)", names: projectsByHealth("blocked") },
   ];
   const capSegments = [
-    { label: "Available", value: capRows.filter((r) => ["available", "balanced"].includes(r.cap.status)).length, color: "var(--health-ontrack)" },
-    { label: "Near capacity", value: capRows.filter((r) => r.cap.status === "almost-full").length, color: "var(--health-atrisk)" },
-    { label: "Overloaded", value: capRows.filter((r) => ["needs-support", "overloaded"].includes(r.cap.status)).length, color: "var(--health-blocked)" },
+    { label: "Available", value: capRows.filter((r) => ["available", "balanced"].includes(r.cap.status)).length, color: "var(--health-ontrack)", names: peopleByBands(["available", "balanced"]) },
+    { label: "Near capacity", value: capRows.filter((r) => r.cap.status === "almost-full").length, color: "var(--health-atrisk)", names: peopleByBands(["almost-full"]) },
+    { label: "Overloaded", value: capRows.filter((r) => ["needs-support", "overloaded"].includes(r.cap.status)).length, color: "var(--health-blocked)", names: peopleByBands(["needs-support", "overloaded"]) },
   ];
   const upcomingDeadlines = [...store.data.projects]
     .filter((p) => computeStage(p, store.tasksFor(p.id)) !== "done" && p.end_date)
@@ -79,9 +86,8 @@ export function ExecutiveHome({
         <Card>
           <div className="panel-head-row">
             <h2>Team capacity</h2>
-            <Link href="/team" className="linklike">Open →</Link>
           </div>
-          <div className="field-hint" style={{ marginBottom: 10 }}>Everyone&apos;s status for this week — see Team for exact hours.</div>
+          <div className="field-hint" style={{ marginBottom: 10 }}>Everyone&apos;s status for this week — hover a row for names.</div>
           <DonutWithLegend segments={capSegments} centerLabel="people" />
         </Card>
         <Card>
@@ -98,7 +104,8 @@ export function ExecutiveHome({
                 const color = health === "blocked" ? "var(--health-blocked)" : health === "at-risk" ? "var(--health-atrisk)" : "var(--diem-blue)";
                 return (
                   <Link href="/projects" className="timeline-row" key={p.id} style={{ cursor: "pointer" }}>
-                    <span className="tl-date">{fmt(fromISO(p.end_date!))}{d >= 0 ? ` · ${d}d` : ""}</span>
+                    <span className="tl-date">{fmt(fromISO(p.end_date!))}</span>
+                    <span className="tl-days">{d >= 0 ? `${d}d` : ""}</span>
                     <span className="tl-name">{p.name}</span>
                     <div className="tl-bar">
                       <div style={{ width: `${w}%`, background: color }} />
