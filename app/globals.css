@@ -490,19 +490,22 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 .plan-name-cell{position:sticky; left:0; background:var(--surface); padding:12px 14px; display:flex; align-items:center; gap:10px; z-index:4; min-width:190px;}
 .plan-name-cell .pn-name{font-size:13.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;}
 .plan-name-cell .pn-role{font-size:11px; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;}
-.plan-day-cell{position:relative; min-height:78px; padding:5px; background:var(--surface);}
+.plan-day-cell{position:relative; height:92px; padding:5px; background:var(--surface); overflow-y:auto;}
 .plan-day-cell.weekend{background:#FAFAFD;}
 .plan-day-cell.today{background:#FFFAF0;}
-.plan-block{border-radius:7px; padding:6px 9px; font-size:11.5px; font-weight:700; margin-bottom:4px; line-height:1.35; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space:normal; cursor:pointer;}
+.plan-day-cell::-webkit-scrollbar{width:4px;}
+.plan-day-cell::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+.plan-day-cell::-webkit-scrollbar-track{background:transparent;}
+.plan-block{border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:600; margin-bottom:4px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer;}
 .plan-block.not-started{background:var(--stage-ns-bg); color:var(--stage-ns-fg);}
 .plan-block.in-progress{background:var(--stage-prog-bg); color:var(--stage-prog-fg);}
 .plan-block.done{background:var(--stage-done-bg); color:var(--stage-done-fg);}
 .plan-block.blocked{background:var(--stage-blocked-bg); color:var(--health-blocked);}
 .plan-block.dayoff{background:repeating-linear-gradient(135deg, #F0EAF8, #F0EAF8 6px, #E4DAF2 6px, #E4DAF2 12px); color:var(--diem-purple); cursor:default; text-align:center;}
 .plan-block.seg-mid, .plan-block.seg-end{border-radius:0;}
-.plan-block.seg-start{border-radius:7px 0 0 7px; margin-right:-5px; padding-right:4px;}
+.plan-block.seg-start{border-radius:6px 0 0 6px; margin-right:-5px; padding-right:4px;}
 .plan-block.seg-mid{margin-left:-5px; margin-right:-5px; opacity:.82;}
-.plan-block.seg-end{border-radius:0 7px 7px 0; margin-left:-5px;}
+.plan-block.seg-end{border-radius:0 6px 6px 0; margin-left:-5px;}
 .plan-block.plan-overdue{box-shadow:inset 0 0 0 1.5px var(--diem-orange);}
 .plan-support-badge{display:inline-block; background:rgba(255,255,255,0.55); border-radius:5px; padding:0 4px; font-size:9.5px; font-weight:700; margin-left:3px;}
 .plan-legend{display:flex; gap:18px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-soft); margin:-6px 0 12px; align-items:center;}
