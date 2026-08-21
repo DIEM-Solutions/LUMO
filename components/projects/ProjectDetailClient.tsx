@@ -79,7 +79,7 @@ function TaskRow({
               {tk.name}
             </div>
             <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
-              Due {fmt(fromISO(tk.due_date))} · {tk.weight}% weight
+              Due {fmt(fromISO(tk.due_date))} · {tk.workload_hours}h
               {subtaskCount ? ` · ${subtaskCount} subtask${subtaskCount === 1 ? "" : "s"}` : ""}
             </div>
           </div>

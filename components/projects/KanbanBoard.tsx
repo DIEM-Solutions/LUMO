@@ -121,7 +121,7 @@ export function KanbanBoard({
                         <div className="kc-tags">
                           <span className={`tag priority-${tk.priority}`}>{tk.priority}</span>
                           <span className="tag" style={{ background: "var(--bg-deep)", color: "var(--ink-soft)" }}>
-                            {tk.weight}% wt
+                            {tk.workload_hours}h
                           </span>
                         </div>
                       </div>

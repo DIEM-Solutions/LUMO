@@ -57,7 +57,6 @@ export function TaskModal({
   const [status, setStatus] = useState<TaskStatus>(forceStatus ?? task?.status ?? "not-started");
   const [priority, setPriority] = useState<Priority>(task?.priority ?? "medium");
   const [dueDate, setDueDate] = useState(task?.due_date ?? toISO(addDays(today(), 7)));
-  const [weight, setWeight] = useState(task?.weight ?? 10);
   const [startDate, setStartDate] = useState(task?.start_date ?? toISO(today()));
   const [workloadHours, setWorkloadHours] = useState(task?.workload_hours ?? 8);
   const [includeWeekends, setIncludeWeekends] = useState(task?.include_weekends ?? false);
@@ -97,7 +96,6 @@ export function TaskModal({
       status: effectiveStatus,
       priority,
       dueDate,
-      weight: Math.max(0, Math.min(100, weight)),
       startDate,
       workloadHours: Math.max(0.5, workloadHours),
       includeWeekends,
@@ -236,19 +234,14 @@ export function TaskModal({
           <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </div>
         <div className="field">
-          <label>Weight (% of project)</label>
-          <input type="number" min={0} max={100} value={weight} onChange={(e) => setWeight(+e.target.value)} />
-        </div>
-      </div>
-      <div className="field-row">
-        <div className="field">
           <label>Start date</label>
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </div>
-        <div className="field">
-          <label>Estimated workload (hours)</label>
-          <input type="number" min={0.5} step={0.5} value={workloadHours} onChange={(e) => setWorkloadHours(+e.target.value)} />
-        </div>
+      </div>
+      <div className="field">
+        <label>Estimated workload (hours)</label>
+        <input type="number" min={0.5} step={0.5} value={workloadHours} onChange={(e) => setWorkloadHours(+e.target.value)} />
+        <div className="field-hint">Also used to weight this task&apos;s share of the project&apos;s overall progress.</div>
       </div>
       <div className="field">
         <label>Include weekends in this task?</label>

@@ -39,17 +39,6 @@ export type Person = {
 
 export type ProjectType = "client" | "internal";
 export type Priority = "high" | "medium" | "low";
-export type ProgressManual = {
-  enabled: boolean;
-  value: number;
-  reason: string;
-  by: string | null;
-  date: string;
-};
-export type ProgressManualLogEntry = ProgressManual & {
-  restoredAt?: string;
-  restoredBy?: string;
-};
 export type HealthValue = "on-track" | "at-risk" | "blocked";
 export type HealthManual = { enabled: boolean; value: HealthValue };
 
@@ -64,8 +53,6 @@ export type Project = {
   start_date: string | null;
   end_date: string | null;
   next_deliverable: string | null;
-  progress_manual: ProgressManual | null;
-  progress_manual_log: ProgressManualLogEntry[];
   health_manual: HealthManual | null;
   created_at: string;
   updated_at: string;
@@ -91,7 +78,6 @@ export type Task = {
   due_date: string | null;
   start_date: string | null;
   priority: Priority;
-  weight: number;
   workload_hours: number;
   include_weekends: boolean;
   notes: string;

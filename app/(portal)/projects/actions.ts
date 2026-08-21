@@ -230,7 +230,6 @@ export type TaskFormInput = {
   status: TaskStatus;
   priority: Priority;
   dueDate: string;
-  weight: number;
   startDate: string;
   workloadHours: number;
   includeWeekends: boolean;
@@ -254,7 +253,6 @@ export async function createTask(input: TaskFormInput) {
       status: input.status,
       priority: input.priority,
       due_date: input.dueDate,
-      weight: input.weight,
       start_date: input.startDate,
       workload_hours: input.workloadHours,
       include_weekends: input.includeWeekends,
@@ -320,7 +318,6 @@ export async function updateTask(id: string, input: TaskFormInput) {
       status: input.status,
       priority: input.priority,
       due_date: input.dueDate,
-      weight: input.weight,
       start_date: input.startDate,
       workload_hours: input.workloadHours,
       include_weekends: input.includeWeekends,
