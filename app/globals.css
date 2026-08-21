@@ -530,7 +530,8 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 .cal-week-row{display:grid; grid-template-columns:repeat(7,1fr);}
 .cal-week-head{padding:9px 6px; text-align:center; border-bottom:1px solid var(--border-soft); border-right:1px solid var(--border-soft);}
 .cal-week-head .dow{font-size:9.5px; text-transform:uppercase; color:var(--ink-faint); display:block;}
-.cal-week-head .dnum{font-family:var(--font-plex-mono),monospace; font-size:15px; font-weight:600;}
+.cal-week-head .dnum{font-family:var(--font-plex-mono),monospace; font-size:15px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%;}
+.cal-week-head .dnum.today{background:var(--diem-blue); color:#fff;}
 .cal-week-body{padding:8px 6px; min-height:200px; border-right:1px solid var(--border-soft); border-bottom:1px solid var(--border-soft);}
 
 /* ================= TEAM CAPACITY ================= */
