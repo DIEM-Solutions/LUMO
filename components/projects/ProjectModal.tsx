@@ -194,7 +194,7 @@ export function ProjectModal({
           onChange={(e) => setNextDeliverable(e.target.value)}
           placeholder="What's the next thing due on this project?"
         />
-        <div className="field-hint">Shown as the 🎯 next-step callout. Leave blank to hide it; it's also hidden automatically once the project is complete.</div>
+        <div className="field-hint">Shown as the 🎯 next-step callout. Leave blank to hide it; it&apos;s also hidden automatically once the project is complete.</div>
       </div>
     </Modal>
   );
