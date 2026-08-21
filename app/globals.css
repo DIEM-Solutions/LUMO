@@ -487,15 +487,13 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 .plan-head-cell.weekend{background:#F1F1F7;}
 .plan-head-cell.today{background:var(--stage-prog-bg); color:var(--stage-prog-fg); font-weight:700;}
 .plan-corner{background:var(--surface-alt); border-bottom:1px solid var(--border-soft);}
-.plan-name-cell{position:sticky; left:0; background:var(--surface); padding:12px 14px; display:flex; align-items:center; gap:10px; z-index:4; min-width:190px;}
+.plan-name-cell{position:sticky; left:0; background:var(--surface); padding:12px 14px; display:flex; align-items:center; gap:10px; z-index:4; min-width:210px;}
 .plan-name-cell .pn-name{font-size:13.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;}
 .plan-name-cell .pn-role{font-size:11px; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;}
-.plan-day-cell{position:relative; height:92px; padding:5px; background:var(--surface); overflow-y:auto;}
+.plan-day-cell{position:relative; height:108px; padding:5px; background:var(--surface);}
 .plan-day-cell.weekend{background:#FAFAFD;}
 .plan-day-cell.today{background:#FFFAF0;}
-.plan-day-cell::-webkit-scrollbar{width:4px;}
-.plan-day-cell::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
-.plan-day-cell::-webkit-scrollbar-track{background:transparent;}
+.plan-more{font-size:9.5px; font-weight:600; color:var(--ink-faint); padding-left:3px;}
 .plan-block{border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:600; margin-bottom:4px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer;}
 .plan-block.not-started{background:var(--stage-ns-bg); color:var(--stage-ns-fg);}
 .plan-block.in-progress{background:var(--stage-prog-bg); color:var(--stage-prog-fg);}

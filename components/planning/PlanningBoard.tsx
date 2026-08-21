@@ -100,7 +100,7 @@ export function PlanningBoard({
       </div>
 
       <div className="plan-wrap">
-        <div className="plan-grid" style={{ gridTemplateColumns: `190px repeat(${days.length}, minmax(100px,1fr))` }}>
+        <div className="plan-grid" style={{ gridTemplateColumns: `210px repeat(${days.length}, minmax(140px,1fr))` }}>
           <div className="plan-corner" />
           {days.map((d) => (
             <div key={d.toISOString()} className={`plan-head-cell${[0, 6].includes(d.getDay()) ? " weekend" : ""}${dayDiff(today(), d) === 0 ? " today" : ""}`}>
@@ -129,15 +129,17 @@ export function PlanningBoard({
                     if (projectFilter !== "all" && tk.project_id !== projectFilter) return false;
                     return taskWorkingDays(tk).some((sd) => dayDiff(sd, d) === 0);
                   });
+                  const visibleTasks = dayTasks.slice(0, 3);
+                  const hiddenCount = dayTasks.length - visibleTasks.length;
                   return (
                     <div key={d.toISOString()} className={`plan-day-cell${[0, 6].includes(d.getDay()) ? " weekend" : ""}${dayDiff(today(), d) === 0 ? " today" : ""}`}>
                       {off && (
                         <div className="plan-block dayoff" title={`${off.type} — ${person.name}`}>
-                          {dayDiff(fromISO(off.start_date), d) === 0 ? `🌴 ${off.type}` : ""}
+                          🌴 {off.type}
                         </div>
                       )}
                       {!off &&
-                        dayTasks.map((tk) => {
+                        visibleTasks.map((tk) => {
                           const span = taskWorkingDays(tk);
                           const seg = segmentClass(span, d);
                           const proj = store.projectById(tk.project_id);
@@ -162,6 +164,7 @@ export function PlanningBoard({
                             </div>
                           );
                         })}
+                      {!off && hiddenCount > 0 && <div className="plan-more">+{hiddenCount} more</div>}
                     </div>
                   );
                 })}

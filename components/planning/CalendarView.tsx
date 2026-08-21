@@ -194,7 +194,7 @@ export function CalendarView({
             const weekHolidays = weekDays.map(holidayOnDay);
             const hasHolidayThisWeek = weekHolidays.some(Boolean);
             return (
-              <div key={w} className="plan-grid" style={{ gridTemplateColumns: "180px repeat(7,1fr)", marginBottom: w === 0 && viewMode === "2weeks" ? 10 : 0 }}>
+              <div key={w} className="plan-grid" style={{ gridTemplateColumns: "210px repeat(7, minmax(140px,1fr))", marginBottom: w === 0 && viewMode === "2weeks" ? 10 : 0 }}>
                 <div className="plan-corner" />
                 {weekDays.map((d) => {
                   const isToday = dayDiff(today(), d) === 0;
@@ -233,6 +233,8 @@ export function CalendarView({
                     {weekDays.map((d) => {
                       const off = dayOffFor(person.id, d);
                       const dayTasks = tasksForPersonOnDay(person.id, d);
+                      const visibleTasks = dayTasks.slice(0, 3);
+                      const hiddenCount = dayTasks.length - visibleTasks.length;
                       const isToday = dayDiff(today(), d) === 0;
                       return (
                         <div key={d.toISOString()} className={`plan-day-cell${[0, 6].includes(d.getDay()) ? " weekend" : ""}${isToday ? " today" : ""}`}>
@@ -242,7 +244,7 @@ export function CalendarView({
                             </div>
                           )}
                           {!off &&
-                            dayTasks.map((tk) => (
+                            visibleTasks.map((tk) => (
                               <div
                                 key={tk.id}
                                 className={`plan-block ${tk.status}`}
@@ -252,6 +254,7 @@ export function CalendarView({
                                 {tk.name}
                               </div>
                             ))}
+                          {!off && hiddenCount > 0 && <div className="plan-more">+{hiddenCount} more</div>}
                         </div>
                       );
                     })}
