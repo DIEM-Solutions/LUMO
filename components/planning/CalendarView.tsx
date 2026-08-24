@@ -39,7 +39,7 @@ export function CalendarView({
 }) {
   const store = createStore(data);
   const planningRoster = store.calendarRoster().filter((p) => p.role_type !== "ceo").sort(bySeniorityDesc);
-  const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [cursor, setCursor] = useState(today());
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
 
