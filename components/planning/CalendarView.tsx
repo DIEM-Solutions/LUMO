@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { dayOffOverlapsDate, taskWorkingDays } from "@/lib/domain/capacity";
+import { computeWeeklyCapacity, dayOffOverlapsDate, startOfWeek, taskWorkingDays } from "@/lib/domain/capacity";
 import { addDays, dayDiff, DOW_SHORT, fmt, fmtLong, fromISO, MONTH_NAMES, today } from "@/lib/domain/dates";
 import { bySeniorityDesc } from "@/lib/domain/hierarchy";
 import { createStore, type PortalData } from "@/lib/domain/store";
-import type { DayOff, PublicHoliday, Task } from "@/lib/types";
+import { Avatar, CapacityBar, CapStatusPill } from "@/components/ui/primitives";
+import type { DayOff, PublicHoliday, Task, WorkloadThresholds } from "@/lib/types";
 
 type ViewMode = "day" | "week" | "2weeks" | "month";
 
@@ -17,25 +18,39 @@ function eventColor(status: Task["status"]) {
 
 export function CalendarView({
   data,
+  thresholds,
   personFilter,
   onPersonChange,
   projectFilter,
   onProjectChange,
   onOpenTask,
+  onAddTaskFor,
   holidays,
 }: {
   data: PortalData;
+  thresholds: WorkloadThresholds;
   personFilter: string;
   onPersonChange: (id: string) => void;
   projectFilter: string;
   onProjectChange: (id: string) => void;
   onOpenTask: (task: Task) => void;
+  onAddTaskFor: (personId: string) => void;
   holidays: PublicHoliday[];
 }) {
   const store = createStore(data);
   const planningRoster = store.calendarRoster().filter((p) => p.role_type !== "ceo").sort(bySeniorityDesc);
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [cursor, setCursor] = useState(today());
+  const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
+
+  function toggleExpanded(key: string) {
+    setExpandedCells((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   function matchesFilters(tk: Task) {
     if (personFilter !== "all" && !store.isAssignedTo(tk, personFilter)) return false;
@@ -47,15 +62,31 @@ export function CalendarView({
     return data.tasks.filter((tk) => matchesFilters(tk) && taskWorkingDays(tk).some((sd) => dayDiff(sd, d) === 0));
   }
 
+  function tasksForPersonOnDay(personId: string, d: Date) {
+    return data.tasks.filter((tk) => {
+      if (!store.isAssignedTo(tk, personId) || tk.status === "done") return false;
+      if (projectFilter !== "all" && tk.project_id !== projectFilter) return false;
+      return taskWorkingDays(tk).some((sd) => dayDiff(sd, d) === 0);
+    });
+  }
+
   function dayOffOnDay(d: Date): DayOff[] {
     return data.dayOff.filter(
       (off) => off.status === "approved" && dayOffOverlapsDate(off, d) && (personFilter === "all" || off.person_id === personFilter)
     );
   }
 
+  function dayOffFor(personId: string, d: Date): DayOff | null {
+    return (
+      data.dayOff.find((off) => off.status === "approved" && off.person_id === personId && dayOffOverlapsDate(off, d)) ?? null
+    );
+  }
+
   function holidayOnDay(d: Date): PublicHoliday | null {
     return holidays.find((h) => dayDiff(fromISO(h.date), d) === 0) ?? null;
   }
+
+  const weekPeople = personFilter !== "all" ? planningRoster.filter((p) => p.id === personFilter) : planningRoster;
 
   function step(dir: number) {
     if (viewMode === "month") setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + dir, 1));
@@ -170,62 +201,103 @@ export function CalendarView({
       )}
 
       {(viewMode === "week" || viewMode === "2weeks") && (
-        <div style={{ background: "var(--surface)", border: "1px solid var(--border-soft)", borderRadius: "var(--radius-lg)", overflow: "hidden", boxShadow: "var(--shadow)" }}>
+        <div className="plan-wrap">
           {Array.from({ length: viewMode === "2weeks" ? 2 : 1 }, (_, w) => {
             const start = addDays(cursor, -cursor.getDay());
             const weekDays = Array.from({ length: 7 }, (_, i) => addDays(start, w * 7 + i));
+            const weekStart = startOfWeek(weekDays[0]);
+            const weekHolidays = weekDays.map(holidayOnDay);
+            const hasHolidayThisWeek = weekHolidays.some(Boolean);
             return (
-              <div key={w}>
-                <div className="cal-week-row" style={{ borderLeft: "1px solid var(--border-soft)" }}>
-                  {weekDays.map((d) => {
-                    const holiday = holidayOnDay(d);
-                    const isToday = dayDiff(today(), d) === 0;
-                    return (
-                      <div key={d.toISOString()} className="cal-week-head" title={holiday?.name} style={holiday ? { background: "#E3F6F2" } : undefined}>
-                        <span className="dow">{DOW_SHORT[d.getDay()]}</span>
-                        <span className={`dnum${isToday ? " today" : ""}`}>{d.getDate()}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="cal-week-row" style={{ borderLeft: "1px solid var(--border-soft)" }}>
-                  {weekDays.map((d) => {
-                    const evs = tasksOnDay(d);
-                    const offs = dayOffOnDay(d);
-                    const holiday = holidayOnDay(d);
-                    const visibleEvs = evs.slice(0, 4);
-                    const hiddenCount = evs.length - visibleEvs.length;
-                    return (
-                      <div key={d.toISOString()} className="cal-week-body">
-                        {holiday && (
-                          <div className="cal-event holiday" title={holiday.name}>
-                            🎌 {holiday.name}
+              <div key={w} className="plan-grid" style={{ gridTemplateColumns: "230px repeat(7, minmax(150px,1fr))", marginBottom: w === 0 && viewMode === "2weeks" ? 10 : 0 }}>
+                <div className="plan-corner" />
+                {weekDays.map((d) => {
+                  const isToday = dayDiff(today(), d) === 0;
+                  return (
+                    <div key={d.toISOString()} className={`plan-head-cell${[0, 6].includes(d.getDay()) ? " weekend" : ""}${isToday ? " today" : ""}`}>
+                      <span className="dow">{DOW_SHORT[d.getDay()]}</span>
+                      <span className={`dnum${isToday ? " today" : ""}`}>{d.getDate()}</span>
+                    </div>
+                  );
+                })}
+
+                {hasHolidayThisWeek && (
+                  <div style={{ display: "contents" }}>
+                    <div style={{ borderBottom: "1px solid var(--border-soft)", background: "var(--surface-alt)" }} />
+                    {weekDays.map((d, i) => (
+                      <div key={d.toISOString()} style={{ borderBottom: "1px solid var(--border-soft)", borderRight: "1px solid var(--border-soft)", padding: weekHolidays[i] ? "5px 6px" : 0 }}>
+                        {weekHolidays[i] && (
+                          <div className="cal-event holiday" style={{ margin: 0 }} title={weekHolidays[i]!.name}>
+                            🎌 {weekHolidays[i]!.name}
                           </div>
                         )}
-                        {offs.map((off) => (
-                          <div className="cal-event dayoff" key={off.id} title={off.type ?? ""}>
-                            🌴 {store.personById(off.person_id)?.name.split(" ")[0]} — {off.type}
-                          </div>
-                        ))}
-                        {visibleEvs.map((tk) => {
-                          const assignee = store.personById(tk.assignee_id);
-                          return (
-                            <div
-                              key={tk.id}
-                              className={`plan-block ${tk.status}`}
-                              title={`${tk.name}${assignee ? ` · ${assignee.name}` : ""}`}
-                              onClick={() => onOpenTask(tk)}
-                            >
-                              {tk.name}{assignee ? ` · ${assignee.name.split(" ")[0]}` : ""}
-                            </div>
-                          );
-                        })}
-                        {hiddenCount > 0 && <div className="plan-more">+{hiddenCount} more</div>}
-                        {!evs.length && !offs.length && !holiday && <span style={{ color: "var(--ink-faint)", fontSize: 11 }}>—</span>}
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                )}
+
+                {weekPeople.map((person) => {
+                  const cap = computeWeeklyCapacity(person.id, store, weekStart, thresholds);
+                  return (
+                    <div key={person.id} style={{ display: "contents" }}>
+                      <div className="plan-name-cell" style={{ alignItems: "flex-start", flexDirection: "column", gap: 6, paddingTop: 10, paddingBottom: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 9, width: "100%" }}>
+                          <Avatar person={person} />
+                          <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                              <span className="pn-name">{person.name}</span>
+                              {cap.pct != null && <CapStatusPill band={cap.band} />}
+                            </div>
+                            <span className="pn-role">{person.role}</span>
+                          </div>
+                          <button className="icon-btn" title={`Add task for ${person.name}`} style={{ flexShrink: 0 }} onClick={() => onAddTaskFor(person.id)}>
+                            +
+                          </button>
+                        </div>
+                        {cap.pct != null && <CapacityBar pct={cap.pct} band={cap.band === "unknown" ? "available" : cap.band} />}
+                      </div>
+                      {weekDays.map((d) => {
+                        const off = dayOffFor(person.id, d);
+                        const dayTasks = tasksForPersonOnDay(person.id, d);
+                        const cellKey = `${person.id}|${d.toISOString()}`;
+                        const expanded = expandedCells.has(cellKey);
+                        const visibleTasks = expanded ? dayTasks : dayTasks.slice(0, 3);
+                        const hiddenCount = dayTasks.length - visibleTasks.length;
+                        const isToday = dayDiff(today(), d) === 0;
+                        return (
+                          <div key={d.toISOString()} className={`plan-day-cell${[0, 6].includes(d.getDay()) ? " weekend" : ""}${isToday ? " today" : ""}`} style={expanded ? { height: "auto" } : undefined}>
+                            {off && (
+                              <div className="plan-block dayoff" title={off.type ?? ""}>
+                                🌴 {off.type}
+                              </div>
+                            )}
+                            {!off &&
+                              visibleTasks.map((tk) => (
+                                <div
+                                  key={tk.id}
+                                  className={`plan-block ${tk.status}`}
+                                  title={`${tk.name} · ${tk.workload_hours}h`}
+                                  onClick={() => onOpenTask(tk)}
+                                >
+                                  {tk.name} · {tk.workload_hours}h
+                                </div>
+                              ))}
+                            {!off && hiddenCount > 0 && (
+                              <div className="plan-more" role="button" onClick={() => toggleExpanded(cellKey)} style={{ cursor: "pointer" }}>
+                                +{hiddenCount} more
+                              </div>
+                            )}
+                            {!off && expanded && dayTasks.length > 3 && (
+                              <div className="plan-more" role="button" onClick={() => toggleExpanded(cellKey)} style={{ cursor: "pointer" }}>
+                                Show less
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             );
           })}

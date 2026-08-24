@@ -74,11 +74,13 @@ export function PlanningClient({
       ) : (
         <CalendarView
           data={data}
+          thresholds={thresholds}
           personFilter={personFilter}
           onPersonChange={setPersonFilter}
           projectFilter={projectFilter}
           onProjectChange={setProjectFilter}
           onOpenTask={openTask}
+          onAddTaskFor={addTaskFor}
           holidays={holidays}
         />
       )}
