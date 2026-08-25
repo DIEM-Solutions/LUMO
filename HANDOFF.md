@@ -31,7 +31,7 @@ This is why:
 - `components/<feature>/*.tsx` — UI. Client components (`"use client"`) hold form state and call the Server Actions.
 - `lib/domain/*.ts` — **pure calculation functions, no database calls.** `computeStage`, `computeHealth`, `computeAutoProgress`, `computeCapacity`, `buildNeedsAttention`, etc. Given the same data, they always return the same answer. If you're debugging "why does this show the wrong number," start here, not in the UI.
 - `lib/data/*.ts` — the actual Supabase queries (`loadPortalData`, `loadAppSettings`, `loadNotifications`...).
-- `supabase/migrations/*.sql` — every database change, in order, numbered. Currently at 017. **Never edit an old migration file** — write a new numbered one, even for a one-line fix.
+- `supabase/migrations/*.sql` — every database change, in order, numbered. Currently at 018. **Never edit an old migration file** — write a new numbered one, even for a one-line fix.
 
 ---
 
@@ -48,11 +48,11 @@ Two layers, and they must agree with each other or you get silent bugs:
 
 ## 5. Stage / Health / Progress — the core calculation
 
-Every project shows a **stage** (not started / in progress / done), a **health** (on track / at risk / blocked), and a **progress %**. These are *always computed*, never typed in by a user, unless someone explicitly overrides with `progress_manual` / `health_manual` (jsonb columns on `projects`, set via the project modal's manual-adjustment path).
+Every project shows a **stage** (not started / in progress / done), a **health** (on track / at risk / blocked), and a **progress %** — all computed live from real task data, always, with no manual override path anymore.
 
-- `computeAutoProgress` (`lib/domain/progress.ts`): weighted average of task completion. A `done` task counts 100%, `in-progress` counts 50% unless someone set a specific `progress_pct` override, `blocked`/`not-started` count 0% unless overridden.
-- **The bug that bit us:** `tasks.progress_pct` had a leftover `DEFAULT 0` from before this rebuild. Every new task silently got `progress_pct = 0` instead of `NULL`. The formula treats "not null" as "someone explicitly overrode this" — so a fresh in-progress task contributed 0% instead of the intended 50%, and a project with one in-progress task could show "Not Started." Fixed in migration 014. **Lesson: if a number looks wrong, check whether a "not set" value actually made it into the database as `0` instead of `NULL`.**
-- Once auto-progress hits 100% (all tasks genuinely done), it **overrides any manual figure** — a project can't be stuck below 100% by a stale manual override once the real work is finished. See `lib/domain/progress.ts` and `lib/domain/health.ts` for the exact precedence.
+- `computeAutoProgress` (`lib/domain/progress.ts`): weighted average of task completion, weighted by each task's **`workload_hours`** — the same hours number already used for capacity, one source of truth instead of two. A `done` task counts 100%, `in-progress` counts 50% unless someone set a specific `progress_pct` override, `blocked`/`not-started` count 0% unless overridden.
+- **The bug that bit us (#1):** `tasks.progress_pct` had a leftover `DEFAULT 0` from before this rebuild. Every new task silently got `progress_pct = 0` instead of `NULL`. The formula treats "not null" as "someone explicitly overrode this" — so a fresh in-progress task contributed 0% instead of the intended 50%, and a project with one in-progress task could show "Not Started." Fixed in migration 014.
+- **The bug that bit us (#2, found late):** projects used to have a `progress_manual` override and tasks used to have a separate `weight` (%) field for progress weighting. Nothing in the UI ever wrote to `progress_manual` after a point, but the calculation still honored it whenever it was set — so a project could stay permanently stuck at a stale percentage (e.g. "90%") no matter how far the real tasks actually were, because auto-progress only outranked the manual figure once it reached exactly 100%. Both `progress_manual`/`progress_manual_log` and `weight` were dropped entirely in migration 018 — progress is now always the live computed number, full stop. **Lesson: a "manual override" column with no UI to set or clear it is a landmine, not a feature.** This is the same failure shape as `manual_utilization` in §6 below — watch for it if you're ever tempted to add a jsonb "override" column without also building the clear/reset path in the same change.
 
 ---
 
@@ -67,6 +67,8 @@ Originally everything was measured in "days" (a task took 1.5 days, a person had
 **Only `in-progress` tasks count toward someone's load.** `not-started` (no work has happened) and `blocked` (work has stalled) are both excluded — see `computeLoadHours` in `lib/domain/capacity.ts`. This was a deliberate late change; if capacity numbers ever look wrong again, check this function first, it's the single source of truth used by daily capacity, weekly capacity, and the main capacity card.
 
 **Dead column to know about:** `people.manual_utilization` (jsonb) still exists in the schema but nothing writes to it anymore — there's no UI for it. It used to silently override the real calculation with a frozen, never-updating number (this is why one person's capacity looked permanently stuck at "44/40" no matter what changed). The code no longer reads it. **Don't resurrect this pattern** — if you want a manual override for capacity, build a real UI for it with a way to clear it, don't just set a jsonb field once and forget it.
+
+**Shared capacity UI:** `CapStatusPill` and `CapacityBar` (`components/ui/primitives.tsx`) render the 5-band color system (Available → Balanced → Almost full → Needs support → Overloaded, tokens `--cap-*-bg`/`--cap-*-fg` in `globals.css`). Reused as-is on the Team page and in the Calendar tab's week view (§9) — if you show a busyness number anywhere new, reuse these two components instead of inventing another badge style.
 
 ---
 
@@ -89,7 +91,21 @@ A subtask is just a normal task with `parent_task_id` set (migration 017). It ha
 
 ---
 
-## 9. Performance — what was actually slow and why
+## 9. Planning & Calendar — the shared grid pattern
+
+Two subtabs on `/planning` (`components/planning/PlanningClient.tsx`): **Two-Week Planning** (`PlanningBoard.tsx`) and **Calendar** (`CalendarView.tsx`, Week/2-Weeks views only — Month and Day are still the older date-grid style and haven't been redone the same way, see §15). Both grids ended up sharing the same visual language after several rounds of real feedback, so they use the same CSS classes (`app/globals.css`, search `.plan-`):
+
+- **Rows are people, columns are days**, name column sticky-left with an avatar, role, and (Calendar tab only) a live `CapStatusPill`/`CapacityBar` computed from `computeWeeklyCapacity` for the week being viewed.
+- **`.plan-block`** is one task chip: single line, status-colored, always shows the task's full name and hours (`{name} · {hours}h`) — including on *every* day a multi-day task spans, not just the first. This was a deliberate, explicit product decision: a 3-day task should read the same on all 3 days, not go blank after day one.
+- **Never render a `.plan-block` with empty text content.** An earlier version hid the task name on the "middle"/"end" days of a multi-day task to fake a connected Gantt-style bar — with no text inside, the box had nothing to establish a line box, so it collapsed to a near-invisible sliver a few pixels tall instead of a real chip. This is a real CSS trap worth knowing generally: a block element with padding but zero content can render far shorter than you'd expect. If you ever want a "connected bar" look again, give it real (even visually hidden) content, don't render truly empty divs.
+- Each day cell caps at **3 visible tasks + a "+N more" line**; clicking "+N more" expands that one cell in place to show the rest (`expandedCells` state in `CalendarView.tsx`, same pattern reused if you touch `PlanningBoard.tsx`). This was chosen over a fixed-height-with-hidden-scrollbar approach on purpose — that earlier version silently clipped whatever didn't fit, which looked like a rendering bug. Capping the count and showing an explicit "+N more" always tells the truth about what's hidden. It's also click-triggered, not hover-triggered — there was an explicit ask to not rely on hover to reveal information anywhere in this UI.
+- Day columns floor at `140–150px` (`minmax(140px,1fr)` / `minmax(150px,1fr)`) so a wider date range scrolls horizontally instead of squeezing every column down to unreadable widths — that was a real, reported bug (task names truncating to almost nothing at the 3-week range).
+
+**If the two tabs ever look inconsistent again:** they're two separate components sharing CSS by convention, not by a shared component — a change to one doesn't automatically apply to the other. Worth considering merging them into one view at some point; they've been drifting toward showing the same information anyway.
+
+---
+
+## 10. Performance — what was actually slow and why
 
 Two real, found-by-reading-the-code issues, both fixed:
 
@@ -100,7 +116,7 @@ Two real, found-by-reading-the-code issues, both fixed:
 
 ---
 
-## 10. How to deploy
+## 11. How to deploy
 
 ```bash
 git add <files>
@@ -110,7 +126,7 @@ git push origin main
 
 Vercel auto-deploys `main` on every push. No manual deploy step. Live in 1–2 minutes.
 
-## 11. How to run a database migration
+## 12. How to run a database migration
 
 1. Write a new file: `supabase/migrations/0XX_description.sql` (next number after whatever's highest — check `supabase/migrations/`).
 2. Open the Supabase project → SQL Editor.
@@ -120,7 +136,7 @@ Vercel auto-deploys `main` on every push. No manual deploy step. Live in 1–2 m
 
 ---
 
-## 12. Common changes — quick recipes
+## 13. Common changes — quick recipes
 
 **Add a new task/project field:**
 1. Migration: `alter table tasks add column ...`
@@ -148,15 +164,19 @@ Already a real feature, not hardcoded — Settings → Workspace → Branding. C
 
 ---
 
-## 13. Things that will bite you if you don't know them
+## 14. Things that will bite you if you don't know them
 
 - **Windows + Bash tool `cd` quirk:** if a shell command fails with "not a git repository," the working directory reset — just `cd` back into `diem-portal-app` and retry, don't assume the repo broke.
 - **`git commit` file paths with parentheses** (`app/(portal)/...`) need escaping or quoting in bash (`app/\(portal\)/...`).
 - **Supabase migration file numbering** has one gap already (`007_ensure_person_link.sql` and `007_merge_ghost_people_and_project.sql` share a number) — harmless, just don't be surprised.
+- **A block element with no text content can collapse to almost no height** even with padding set — see §9. Always give a styled chip real content, or check devtools if something looks like a thin unstyled sliver instead of debugging the color/spacing first.
 - **Real login credentials should never be typed into the app by an AI assistant** (or committed to the repo, or pasted into chat carelessly) — this was a hard rule followed all through this build. Keep following it.
 
 ---
 
-## 14. What's genuinely still open
+## 15. What's genuinely still open
 
-From the original feature roadmap (see `DIEM Portal - Product Roadmap.pptx` if it's still around) — SSO, client-facing share links, a real file-attachment system with actual storage, AI-drafted weekly summaries, and a real Progressive Web App with push notifications were all scoped but not built. If the team wants to sell this beyond DIEM, multi-tenancy (org-scoped data instead of one shared workspace) is the first real architectural change needed — right now every logged-in user sees the whole company's data by design.
+- Calendar tab's **Month and Day views** are still the original date-grid style — only Week/2-Weeks got the person-row + capacity-badge redesign described in §9. Worth revisiting for consistency.
+- The **Two-Week Planning** and **Calendar** tabs have drifted close to showing the same information two different ways — worth a real conversation about merging them into one view.
+- From the original feature roadmap (see `DIEM Portal - Product Roadmap.pptx` if it's still around) — SSO, client-facing share links, a real file-attachment system with actual storage, AI-drafted weekly summaries, and a real Progressive Web App with push notifications were all scoped but not built.
+- If the team wants to sell this beyond DIEM, multi-tenancy (org-scoped data instead of one shared workspace) is the first real architectural change needed — right now every logged-in user sees the whole company's data by design.
