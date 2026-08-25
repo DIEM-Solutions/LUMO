@@ -7,15 +7,6 @@ import { createStore, type PortalData } from "@/lib/domain/store";
 import { Avatar } from "@/components/ui/primitives";
 import type { Person, Task, WorkloadThresholds } from "@/lib/types";
 
-function segmentClass(span: Date[], d: Date) {
-  const first = dayDiff(span[0], d) === 0;
-  const last = dayDiff(span[span.length - 1], d) === 0;
-  if (span.length === 1) return "solo";
-  if (first) return "start";
-  if (last) return "end";
-  return "mid";
-}
-
 export function PlanningBoard({
   data,
   thresholds,
@@ -140,23 +131,20 @@ export function PlanningBoard({
                       )}
                       {!off &&
                         visibleTasks.map((tk) => {
-                          const span = taskWorkingDays(tk);
-                          const seg = segmentClass(span, d);
                           const proj = store.projectById(tk.project_id);
                           const typeAccent = proj ? (proj.type === "client" ? "var(--client-fg)" : "var(--internal-fg)") : "transparent";
                           const overdue = tk.status !== "blocked" && dayDiff(today(), fromISO(tk.due_date)) < 0;
-                          const showTypeAccent = seg === "start" || seg === "solo";
                           const assignee2 = store.personById(tk.assignee2_id);
                           return (
                             <div
                               key={tk.id}
-                              className={`plan-block ${tk.status} seg-${seg}${overdue ? " plan-overdue" : ""}`}
-                              style={showTypeAccent ? { borderLeft: `3px solid ${typeAccent}` } : undefined}
+                              className={`plan-block ${tk.status}${overdue ? " plan-overdue" : ""}`}
+                              style={{ borderLeft: `3px solid ${typeAccent}` }}
                               title={`${tk.name} · ${tk.workload_hours}h`}
                               onClick={() => onOpenTask(tk)}
                             >
-                              {seg === "mid" || seg === "end" ? "" : tk.name}
-                              {(seg === "start" || seg === "solo") && assignee2 && (
+                              {tk.name} · {tk.workload_hours}h
+                              {assignee2 && (
                                 <span className="plan-support-badge" title={`Second assignee: ${assignee2.name}`}>
                                   +1
                                 </span>

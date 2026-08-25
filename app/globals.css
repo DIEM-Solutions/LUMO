@@ -500,10 +500,6 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 .plan-block.done{background:var(--stage-done-bg); color:var(--stage-done-fg);}
 .plan-block.blocked{background:var(--stage-blocked-bg); color:var(--health-blocked);}
 .plan-block.dayoff{background:repeating-linear-gradient(135deg, #F0EAF8, #F0EAF8 6px, #E4DAF2 6px, #E4DAF2 12px); color:var(--diem-purple); cursor:default; text-align:center;}
-.plan-block.seg-mid, .plan-block.seg-end{border-radius:0;}
-.plan-block.seg-start{border-radius:6px 0 0 6px; margin-right:-5px; padding-right:4px;}
-.plan-block.seg-mid{margin-left:-5px; margin-right:-5px; opacity:.82;}
-.plan-block.seg-end{border-radius:0 6px 6px 0; margin-left:-5px;}
 .plan-block.plan-overdue{box-shadow:inset 0 0 0 1.5px var(--diem-orange);}
 .plan-support-badge{display:inline-block; background:rgba(255,255,255,0.55); border-radius:5px; padding:0 4px; font-size:9.5px; font-weight:700; margin-left:3px;}
 .plan-legend{display:flex; gap:18px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-soft); margin:-6px 0 12px; align-items:center;}
