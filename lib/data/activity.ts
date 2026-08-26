@@ -35,9 +35,17 @@ export async function logActivity(entry: {
   const recipients = Array.from(new Set(entry.recipientIds)).filter((id) => id && id !== entry.actorId);
   if (!recipients.length) return;
 
-  await supabase
+  const { error: notifyError } = await supabase
     .from("notification_reads")
     .upsert(recipients.map((personId) => ({ person_id: personId, activity_id: row.id, read_at: null })));
+  if (notifyError) {
+    // This write failing silently is exactly what let notifications go
+    // dark for 13 days without anyone noticing -- log it loudly so a
+    // future RLS/policy drift shows up in the server logs immediately
+    // instead of being discovered by a user reporting "I stopped
+    // getting notifications."
+    console.error("logActivity: failed to create notification_reads rows", notifyError, { activityId: row.id, recipients });
+  }
 }
 
 export async function loadRecentActivity(limit = 40): Promise<ActivityLogEntry[]> {
