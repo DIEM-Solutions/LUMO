@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 import { createTask, deleteTask, updateTask } from "@/app/(portal)/projects/actions";
 import { addDays, toISO, today } from "@/lib/domain/dates";
 import { MentionTextarea } from "./MentionTextarea";
-import type { Person, Priority, Project, Task, TaskStatus, TaskStatusLabels } from "@/lib/types";
+import type { Person, Priority, Project, Task, TaskDaySchedule, TaskStatus, TaskStatusLabels } from "@/lib/types";
 
 const DEFAULT_STATUS_LABEL: Record<TaskStatus, string> = {
   "not-started": "Not started",
@@ -59,6 +59,7 @@ export function TaskModal({
   const [dueDate, setDueDate] = useState(task?.due_date ?? toISO(addDays(today(), 7)));
   const [startDate, setStartDate] = useState(task?.start_date ?? toISO(today()));
   const [workloadHours, setWorkloadHours] = useState(task?.workload_hours ?? 8);
+  const [dailySchedule, setDailySchedule] = useState<TaskDaySchedule[]>(task?.daily_schedule ?? []);
   const [includeWeekends, setIncludeWeekends] = useState(task?.include_weekends ?? false);
   const [blockerReason, setBlockerReason] = useState(task?.blocker_reason ?? "");
   const [approvalPersonId, setApprovalPersonId] = useState(task?.approval_person_id ?? "");
@@ -76,6 +77,16 @@ export function TaskModal({
   );
   const hasSubtasks = !!task && allTasks.some((t) => t.parent_task_id === task.id);
   const subtasks = task ? allTasks.filter((t) => t.parent_task_id === task.id) : [];
+
+  function addScheduleDay() {
+    setDailySchedule((prev) => [...prev, { date: startDate, start: "09:00", end: "11:00" }]);
+  }
+  function updateScheduleDay(index: number, patch: Partial<TaskDaySchedule>) {
+    setDailySchedule((prev) => prev.map((d, i) => (i === index ? { ...d, ...patch } : d)));
+  }
+  function removeScheduleDay(index: number) {
+    setDailySchedule((prev) => prev.filter((_, i) => i !== index));
+  }
 
   async function handleSave(overrideStatus?: TaskStatus) {
     const effectiveStatus = overrideStatus ?? status;
@@ -98,6 +109,7 @@ export function TaskModal({
       dueDate,
       startDate,
       workloadHours: Math.max(0.5, workloadHours),
+      dailySchedule: dailySchedule.filter((d) => d.date && d.start && d.end),
       includeWeekends,
       blockerReason,
       approvalPersonId: approvalPersonId || null,
@@ -242,6 +254,31 @@ export function TaskModal({
         <label>Estimated workload (hours)</label>
         <input type="number" min={0.5} step={0.5} value={workloadHours} onChange={(e) => setWorkloadHours(+e.target.value)} />
         <div className="field-hint">Also used to weight this task&apos;s share of the project&apos;s overall progress.</div>
+      </div>
+      <div className="field">
+        <label>Daily schedule (optional)</label>
+        <div className="field-hint" style={{ marginBottom: 8 }}>
+          Pin specific hours on specific days — doesn&apos;t have to be the same every day.
+        </div>
+        {dailySchedule.map((d, i) => (
+          <div key={i} className="field-row" style={{ alignItems: "flex-end", marginBottom: 8 }}>
+            <div className="field" style={{ flex: 1.3 }}>
+              <input type="date" value={d.date} onChange={(e) => updateScheduleDay(i, { date: e.target.value })} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <input type="time" value={d.start} onChange={(e) => updateScheduleDay(i, { start: e.target.value })} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <input type="time" value={d.end} onChange={(e) => updateScheduleDay(i, { end: e.target.value })} />
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => removeScheduleDay(i)}>
+              Remove
+            </Button>
+          </div>
+        ))}
+        <Button variant="ghost" size="sm" onClick={addScheduleDay}>
+          + Add a day
+        </Button>
       </div>
       <div className="field">
         <label>Include weekends in this task?</label>

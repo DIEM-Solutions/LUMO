@@ -67,6 +67,7 @@ export type ApprovalDecision = {
   decidedAt: string;
   decidedBy: string;
 };
+export type TaskDaySchedule = { date: string; start: string; end: string };
 
 export type Task = {
   id: string;
@@ -79,6 +80,7 @@ export type Task = {
   start_date: string | null;
   priority: Priority;
   workload_hours: number;
+  daily_schedule: TaskDaySchedule[];
   include_weekends: boolean;
   notes: string;
   notes_mentioned_ids: string[];

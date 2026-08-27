@@ -1,11 +1,17 @@
 "use client";
 
 import { approvedDayOffOn, computeCapacity, taskWorkingDays } from "@/lib/domain/capacity";
-import { addDays, dayDiff, DOW_SHORT, fromISO, today } from "@/lib/domain/dates";
+import { addDays, dayDiff, DOW_SHORT, fromISO, toISO, today } from "@/lib/domain/dates";
 import { bySeniorityDesc } from "@/lib/domain/hierarchy";
 import { createStore, type PortalData } from "@/lib/domain/store";
 import { Avatar } from "@/components/ui/primitives";
 import type { Person, Task, WorkloadThresholds } from "@/lib/types";
+
+function scheduleLabel(tk: Task, d: Date): string {
+  const iso = toISO(d);
+  const entry = tk.daily_schedule.find((s) => s.date === iso);
+  return entry ? `${entry.start}–${entry.end}` : `${tk.workload_hours}h`;
+}
 
 export function PlanningBoard({
   data,
@@ -140,10 +146,10 @@ export function PlanningBoard({
                               key={tk.id}
                               className={`plan-block ${tk.status}${overdue ? " plan-overdue" : ""}`}
                               style={{ borderLeft: `3px solid ${typeAccent}` }}
-                              title={`${tk.name} · ${tk.workload_hours}h`}
+                              title={`${tk.name} · ${scheduleLabel(tk, d)}`}
                               onClick={() => onOpenTask(tk)}
                             >
-                              {tk.name} · {tk.workload_hours}h
+                              {tk.name} · {scheduleLabel(tk, d)}
                               {assignee2 && (
                                 <span className="plan-support-badge" title={`Second assignee: ${assignee2.name}`}>
                                   +1

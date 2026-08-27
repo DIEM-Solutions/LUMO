@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { computeWeeklyCapacity, dayOffOverlapsDate, startOfWeek, taskWorkingDays } from "@/lib/domain/capacity";
-import { addDays, dayDiff, DOW_SHORT, fmt, fmtLong, fromISO, MONTH_NAMES, today } from "@/lib/domain/dates";
+import { addDays, dayDiff, DOW_SHORT, fmt, fmtLong, fromISO, MONTH_NAMES, toISO, today } from "@/lib/domain/dates";
 import { bySeniorityDesc } from "@/lib/domain/hierarchy";
 import { createStore, type PortalData } from "@/lib/domain/store";
 import { Avatar, CapacityBar, CapStatusPill } from "@/components/ui/primitives";
@@ -80,6 +80,12 @@ export function CalendarView({
     return (
       data.dayOff.find((off) => off.status === "approved" && off.person_id === personId && dayOffOverlapsDate(off, d)) ?? null
     );
+  }
+
+  function scheduleLabel(tk: Task, d: Date): string {
+    const iso = toISO(d);
+    const entry = tk.daily_schedule.find((s) => s.date === iso);
+    return entry ? `${entry.start}–${entry.end}` : `${tk.workload_hours}h`;
   }
 
   function holidayOnDay(d: Date): PublicHoliday | null {
@@ -276,10 +282,10 @@ export function CalendarView({
                                 <div
                                   key={tk.id}
                                   className={`plan-block ${tk.status}`}
-                                  title={`${tk.name} · ${tk.workload_hours}h`}
+                                  title={`${tk.name} · ${scheduleLabel(tk, d)}`}
                                   onClick={() => onOpenTask(tk)}
                                 >
-                                  {tk.name} · {tk.workload_hours}h
+                                  {tk.name} · {scheduleLabel(tk, d)}
                                 </div>
                               ))}
                             {!off && hiddenCount > 0 && (

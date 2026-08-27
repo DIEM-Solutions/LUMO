@@ -6,7 +6,7 @@ import { getCurrentPerson } from "@/lib/auth/session";
 import { logActivity } from "@/lib/data/activity";
 import { fmt, fromISO } from "@/lib/domain/dates";
 import { parseMentionedIds } from "@/lib/domain/mentions";
-import type { BlockerUrgency, Person, Priority, ProjectType, TaskStatus } from "@/lib/types";
+import type { BlockerUrgency, Person, Priority, ProjectType, TaskDaySchedule, TaskStatus } from "@/lib/types";
 
 async function allPeople(supabase: SupabaseClient): Promise<Person[]> {
   const { data } = await supabase.from("people").select("*");
@@ -232,6 +232,7 @@ export type TaskFormInput = {
   dueDate: string;
   startDate: string;
   workloadHours: number;
+  dailySchedule: TaskDaySchedule[];
   includeWeekends: boolean;
   blockerReason: string;
   approvalPersonId: string | null;
@@ -255,6 +256,7 @@ export async function createTask(input: TaskFormInput) {
       due_date: input.dueDate,
       start_date: input.startDate,
       workload_hours: input.workloadHours,
+      daily_schedule: input.dailySchedule,
       include_weekends: input.includeWeekends,
       blocker_reason: input.status === "blocked" ? input.blockerReason : "",
       approval_person_id: input.approvalPersonId,
@@ -320,6 +322,7 @@ export async function updateTask(id: string, input: TaskFormInput) {
       due_date: input.dueDate,
       start_date: input.startDate,
       workload_hours: input.workloadHours,
+      daily_schedule: input.dailySchedule,
       include_weekends: input.includeWeekends,
       blocker_reason: input.status === "blocked" ? input.blockerReason : "",
       approval_person_id: input.approvalPersonId,
