@@ -12,11 +12,13 @@ export function PlanningClient({
   thresholds,
   taskStatusLabels,
   holidays,
+  currentPersonId,
 }: {
   data: PortalData;
   thresholds: WorkloadThresholds;
   taskStatusLabels: TaskStatusLabels;
   holidays: PublicHoliday[];
+  currentPersonId?: string;
 }) {
   const [subtab, setSubtab] = useState<"planning" | "calendar">("planning");
   const [rangeDays, setRangeDays] = useState(14);
@@ -94,6 +96,7 @@ export function PlanningClient({
           allTasks={data.tasks}
           presetPersonId={presetPersonId}
           statusLabels={taskStatusLabels}
+          currentPersonId={currentPersonId}
         />
       )}
     </>

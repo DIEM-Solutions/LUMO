@@ -20,12 +20,14 @@ export function ProjectsClient({
   thresholds,
   projectCategories,
   taskStatusLabels,
+  currentPersonId,
 }: {
   data: PortalData;
   canCreateProjects: boolean;
   thresholds: WorkloadThresholds;
   projectCategories: string[];
   taskStatusLabels: TaskStatusLabels;
+  currentPersonId?: string;
 }) {
   const store = useMemo(() => createStore(data), [data]);
 
@@ -234,6 +236,7 @@ export function ProjectsClient({
           allTasks={data.tasks}
           forceStatus={forceStatus}
           statusLabels={taskStatusLabels}
+          currentPersonId={currentPersonId}
         />
       )}
     </>

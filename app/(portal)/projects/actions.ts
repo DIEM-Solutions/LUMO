@@ -414,6 +414,42 @@ export async function updateTask(id: string, input: TaskFormInput) {
   revalidateProjectViews();
 }
 
+export async function decideTaskApproval(taskId: string, status: "approved" | "rejected" | "info-requested", comment: string) {
+  const supabase = await createClient();
+  const person = await getCurrentPerson();
+  if (!person) throw new Error("Not signed in.");
+
+  const { data: existing } = await supabase.from("tasks").select("*").eq("id", taskId).maybeSingle();
+  if (!existing) throw new Error("Task not found.");
+  if (existing.approval_person_id !== person.id) throw new Error("Only the person asked for approval can record a decision.");
+
+  const decision = {
+    status,
+    comment: comment.trim(),
+    decidedAt: new Date().toISOString(),
+    decidedBy: person.id,
+  };
+  const { error } = await supabase
+    .from("tasks")
+    .update({ approval_decision: decision, updated_at: new Date().toISOString() })
+    .eq("id", taskId);
+  if (error) throw new Error(error.message);
+
+  const verb = status === "approved" ? "approved" : status === "rejected" ? "rejected" : "asked for more info on";
+  const recipients = [existing.assignee_id, existing.assignee2_id].filter((v): v is string => !!v);
+  await logActivity({
+    kind: "task_updated",
+    actorId: person.id,
+    projectId: existing.project_id,
+    refId: taskId,
+    title: `${person.name} ${verb} "${existing.name}"`,
+    detail: comment.trim() || undefined,
+    recipientIds: recipients,
+  });
+
+  revalidateProjectViews();
+}
+
 export async function deleteTask(id: string) {
   const supabase = await createClient();
   await supabase.from("tasks").delete().eq("id", id);

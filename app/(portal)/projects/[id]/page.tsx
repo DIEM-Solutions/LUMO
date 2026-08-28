@@ -29,6 +29,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           canEdit={perms.canCreateProjects}
           projectCategories={settings.project_categories}
           taskStatusLabels={settings.task_status_labels}
+          currentPersonId={person.id}
         />
       </main>
     </>

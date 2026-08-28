@@ -15,7 +15,7 @@ export default async function PlanningPage() {
     <>
       <Topbar eyebrow="DIEM Portal" title="Planning" />
       <main className="content">
-        <PlanningClient data={data} thresholds={settings.workload_thresholds} taskStatusLabels={settings.task_status_labels} holidays={holidays} />
+        <PlanningClient data={data} thresholds={settings.workload_thresholds} taskStatusLabels={settings.task_status_labels} holidays={holidays} currentPersonId={person.id} />
       </main>
     </>
   );

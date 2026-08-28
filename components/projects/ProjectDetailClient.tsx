@@ -102,12 +102,14 @@ export function ProjectDetailClient({
   canEdit,
   projectCategories,
   taskStatusLabels,
+  currentPersonId,
 }: {
   data: PortalData;
   projectId: string;
   canEdit: boolean;
   projectCategories: string[];
   taskStatusLabels: TaskStatusLabels;
+  currentPersonId?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -342,6 +344,7 @@ export function ProjectDetailClient({
           allTasks={data.tasks}
           presetProjectId={projectId}
           statusLabels={taskStatusLabels}
+          currentPersonId={currentPersonId}
         />
       )}
       {editingBlocker && (

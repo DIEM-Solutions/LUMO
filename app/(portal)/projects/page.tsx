@@ -22,6 +22,7 @@ export default async function ProjectsPage() {
           thresholds={settings.workload_thresholds}
           projectCategories={settings.project_categories}
           taskStatusLabels={settings.task_status_labels}
+          currentPersonId={person.id}
         />
       </main>
     </>

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
-import { createTask, deleteTask, updateTask } from "@/app/(portal)/projects/actions";
+import { createTask, decideTaskApproval, deleteTask, updateTask } from "@/app/(portal)/projects/actions";
 import { addDays, toISO, today } from "@/lib/domain/dates";
 import { MentionTextarea } from "./MentionTextarea";
 import type { Person, Priority, Project, Task, TaskDaySchedule, TaskStatus, TaskStatusLabels } from "@/lib/types";
@@ -29,6 +29,7 @@ export function TaskModal({
   presetParentTaskId,
   forceStatus,
   statusLabels,
+  currentPersonId,
 }: {
   onClose: () => void;
   task: Task | null;
@@ -40,6 +41,7 @@ export function TaskModal({
   presetParentTaskId?: string;
   forceStatus?: TaskStatus;
   statusLabels?: TaskStatusLabels;
+  currentPersonId?: string;
 }) {
   const STATUS_LABEL: Record<TaskStatus, string> = {
     "not-started": statusLabels?.["not-started"] ?? DEFAULT_STATUS_LABEL["not-started"],
@@ -68,6 +70,23 @@ export function TaskModal({
   const [parentTaskId, setParentTaskId] = useState(task?.parent_task_id ?? presetParentTaskId ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [decisionComment, setDecisionComment] = useState("");
+  const [decidingStatus, setDecidingStatus] = useState<"approved" | "rejected" | "info-requested" | null>(null);
+
+  const isApprover = !!task && !!currentPersonId && task.approval_person_id === currentPersonId;
+
+  async function handleDecision(decision: "approved" | "rejected" | "info-requested") {
+    if (!task) return;
+    setDecidingStatus(decision);
+    try {
+      await decideTaskApproval(task.id, decision, decisionComment);
+      toast(decision === "approved" ? "Task approved" : decision === "rejected" ? "Task rejected" : "Asked for more info");
+      router.refresh();
+      onClose();
+    } finally {
+      setDecidingStatus(null);
+    }
+  }
 
   // A task can be a parent (has subtasks under it) or a subtask (has a
   // parent) but not both -- keeps the hierarchy to one level, which covers
@@ -314,6 +333,44 @@ export function TaskModal({
           <input type="text" value={dependency} onChange={(e) => setDependency(e.target.value)} placeholder="e.g. Waiting on client data" />
         </div>
       </div>
+      {task?.approval_person_id && (
+        <div className="field">
+          <label>Approval</label>
+          {task.approval_decision ? (
+            <div className="field-hint">
+              <strong>
+                {task.approval_decision.status === "approved" ? "✓ Approved" : task.approval_decision.status === "rejected" ? "✗ Rejected" : "More info requested"}
+              </strong>{" "}
+              by {people.find((p) => p.id === task.approval_decision!.decidedBy)?.name ?? "someone"} on {new Date(task.approval_decision.decidedAt).toLocaleDateString()}
+              {task.approval_decision.comment ? ` — "${task.approval_decision.comment}"` : ""}
+            </div>
+          ) : isApprover ? (
+            <>
+              <textarea
+                value={decisionComment}
+                onChange={(e) => setDecisionComment(e.target.value)}
+                placeholder="Optional comment"
+                style={{ marginBottom: 8 }}
+              />
+              <div className="modal-foot-actions">
+                <Button variant="ghost" size="sm" disabled={!!decidingStatus} onClick={() => handleDecision("info-requested")}>
+                  Request info
+                </Button>
+                <Button variant="danger" size="sm" disabled={!!decidingStatus} onClick={() => handleDecision("rejected")}>
+                  Reject
+                </Button>
+                <Button size="sm" disabled={!!decidingStatus} onClick={() => handleDecision("approved")}>
+                  Approve
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="field-hint">
+              Waiting on {people.find((p) => p.id === task.approval_person_id)?.name ?? "someone"}&apos;s approval.
+            </div>
+          )}
+        </div>
+      )}
       {hasSubtasks ? (
         <div className="field">
           <label>Subtasks ({subtasks.length})</label>
