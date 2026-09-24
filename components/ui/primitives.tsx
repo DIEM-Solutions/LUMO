@@ -122,6 +122,20 @@ export function CapStatusPill({ band }: { band: CapacityBand | "unknown" }) {
   return <span className={`cap-status-pill ${band}`}>{CAP_LABEL[band]}</span>;
 }
 
+/**
+ * Overdue/blocked work, shown next to the capacity pill -- a separate flag on
+ * purpose, it never changes the capacity label (see computeCapacity).
+ */
+export function CapWarningChip({ overdue, blocked }: { overdue: number; blocked: number }) {
+  if (!overdue && !blocked) return null;
+  const parts = [overdue ? `${overdue} overdue` : "", blocked ? `${blocked} blocked` : ""].filter(Boolean);
+  return (
+    <span className="reason-chip warn" title="Overdue or blocked work. Doesn't change the capacity %.">
+      ⚠ {parts.join(" · ")}
+    </span>
+  );
+}
+
 export function UrgencyDot({ urgency }: { urgency: BlockerUrgency }) {
   const color =
     urgency === "high" ? "var(--health-blocked)" : urgency === "medium" ? "var(--health-atrisk)" : "var(--ink-faint)";

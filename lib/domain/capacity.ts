@@ -1,5 +1,5 @@
 import type { CapacityBand, DayOff, ManualUtilization, Task, WorkloadThresholds } from "@/lib/types";
-import { addDays, clamp, dayDiff, fromISO, isNonWorkingDay, isWeekend, round, today, workingDaySpan, type WorkingCalendar } from "./dates";
+import { addDays, clamp, dayDiff, fromISO, isNonWorkingDay, isWeekend, nextWorkingDay, round, today, workingDaySpan, type WorkingCalendar } from "./dates";
 import { computeStage } from "./stage";
 import type { Store } from "./store";
 
@@ -32,16 +32,49 @@ export function startOfWeek(d: Date): Date {
   return addDays(d, -d.getDay());
 }
 
+/**
+ * Where a task's chip is drawn on the Calendar tab (from its start date, one day
+ * per 8h). Display only -- capacity uses taskLoadDays below, not this.
+ */
 export function taskWorkingDays(tk: Task): Date[] {
   const start = tk.start_date ? fromISO(tk.start_date) : fromISO(tk.due_date);
   const spanDays = Math.max(1, Math.ceil((tk.workload_hours || HOURS_PER_DAY) / HOURS_PER_DAY));
   return workingDaySpan(start, spanDays, !!tk.include_weekends);
 }
 
-/** Hours of work a task contributes per working day it spans (an even split across its span). */
-function taskHoursPerDay(tk: Task): number {
-  const span = taskWorkingDays(tk);
-  return span.length ? (tk.workload_hours || HOURS_PER_DAY) / span.length : 0;
+/** The week capacity is measured against: on a weekend, "this week" means the coming one. */
+export function currentWeekStart(): Date {
+  return startOfWeek(nextWorkingDay(today()));
+}
+
+/** Hours still to do on a task: remaining_hours if someone set it, otherwise its full size. */
+function remainingHours(tk: Task): number {
+  return tk.remaining_hours != null ? tk.remaining_hours : tk.workload_hours || HOURS_PER_DAY;
+}
+
+/**
+ * The days a task's remaining hours are spread over for capacity: evenly across
+ * working days from today to its due date. Overdue or undated work still has to
+ * be done, so it's squeezed into what's left of the current week (to Friday).
+ * Always forward-looking from today -- a long-running in-progress task keeps
+ * counting until it's done. (It used to be spread from its start date, so once
+ * that original span was in the past the task silently counted 0h.)
+ */
+export function taskLoadDays(tk: Task): Date[] {
+  const from = today();
+  const due = tk.due_date ? fromISO(tk.due_date) : null;
+  const end = due && due >= from ? due : addDays(currentWeekStart(), 5);
+  const days: Date[] = [];
+  for (let d = from; d <= end; d = addDays(d, 1)) {
+    if (tk.include_weekends || !isWeekend(d)) days.push(d);
+  }
+  return days.length ? days : [tk.include_weekends ? from : nextWorkingDay(from)];
+}
+
+function weekdaysBetween(start: Date, end: Date): number {
+  let n = 0;
+  for (let d = start; d <= end; d = addDays(d, 1)) if (!isWeekend(d)) n++;
+  return n;
 }
 
 export function dayOffOverlapsDate(d: DayOff, date: Date): boolean {
@@ -109,23 +142,30 @@ function bandFor(pct: number, thresholds: WorkloadThresholds): CapacityBand {
 }
 
 /**
- * Hours of work a person is carrying within an arbitrary date window, from
- * tasks actually underway right now. Only "in-progress" counts -- not
- * started (no work has happened yet) and blocked (work has stalled, so it
- * isn't occupying the person's time right now) are both excluded, same as
- * done. A blocked or not-started task still shows up as a flag/reason
- * elsewhere on the capacity card, it just doesn't count toward the load %.
+ * Hours of work a person is carrying within a date window, per project, from
+ * tasks actually underway right now. Only "in-progress" counts -- not started
+ * (no work has happened yet) and blocked (work has stalled, so it isn't
+ * occupying the person's time right now) are both excluded, same as done.
+ * Blocked/overdue work is surfaced as a separate warning (Capacity.overdueCount /
+ * blockedCount, rendered by CapWarningChip), never by changing the % or label.
+ * A second assignee carries half the hours.
  */
-export function computeLoadHours(personId: string, store: Store, windowStart: Date, windowEnd: Date): number {
-  let hours = 0;
+export function computeLoadByProject(personId: string, store: Store, windowStart: Date, windowEnd: Date): Map<string, number> {
+  const byProject = new Map<string, number>();
   store.data.tasks.forEach((tk) => {
     if (!store.isAssignedTo(tk, personId) || tk.status !== "in-progress") return;
     const roleFactor = tk.assignee_id === personId ? 1 : 0.5;
-    const perDay = taskHoursPerDay(tk);
-    const span = taskWorkingDays(tk);
-    const overlapDays = span.filter((d) => d >= windowStart && d <= windowEnd).length;
-    if (overlapDays > 0) hours += overlapDays * perDay * roleFactor;
+    const days = taskLoadDays(tk);
+    const perDay = remainingHours(tk) / days.length;
+    const overlapDays = days.filter((d) => d >= windowStart && d <= windowEnd).length;
+    if (overlapDays > 0) byProject.set(tk.project_id, (byProject.get(tk.project_id) ?? 0) + overlapDays * perDay * roleFactor);
   });
+  return byProject;
+}
+
+export function computeLoadHours(personId: string, store: Store, windowStart: Date, windowEnd: Date): number {
+  let hours = 0;
+  computeLoadByProject(personId, store, windowStart, windowEnd).forEach((h) => (hours += h));
   return Math.round(hours * 10) / 10;
 }
 
@@ -160,34 +200,58 @@ export function computeDailyCapacity(
   return { hours, capacityHours: Math.round(capacityHours * 10) / 10, pct, band: bandFor(pct, thresholds) };
 }
 
+/**
+ * The one wording for booked-vs-capacity hours, used wherever they're shown:
+ * "6h of 16h left this week", "3h of 8h today". Always say which window --
+ * a bare "6/16h" was ambiguous once "this week" started meaning the rest of it.
+ */
+export function hoursOfLabel(hours: number, capacityHours: number, window: "today" | "week"): string {
+  return `${hours}h of ${capacityHours}h ${window === "today" ? "today" : "left this week"}`;
+}
+
+/** A week that's entirely in the past -- nothing left to measure, so don't show a capacity figure for it. */
+export function isPastWeek(weekly: WeeklyCapacity): boolean {
+  return weekly.from > weekly.weekEnd;
+}
+
 export type WeeklyCapacity = {
   hours: number;
   capacityHours: number;
   pct: number | null;
   band: CapacityBand | "unknown";
+  offDays: number;
+  /** First day actually measured: today, for the current week. */
+  from: Date;
+  weekEnd: Date;
 };
 
 /**
- * This week's actual hours vs. a person's weekly capacity, net of approved
- * leave -- always computed live from real task data, never frozen by a
- * manually reported number.
+ * Remaining hours booked this week vs. remaining capacity this week, net of
+ * approved leave -- both measured from today to the end of the week, so the %
+ * means "how full is the rest of this week" (on a Thursday that's Thu+Fri, not
+ * the whole 40h; days already gone are already worked). A future week is
+ * measured in full; a past week has nothing left to measure (0/0h). Always
+ * computed live from real task data, never a manually reported number.
  */
 export function computeWeeklyCapacity(
   personId: string,
   store: Store,
-  weekStart: Date = startOfWeek(today()),
+  weekStart: Date = currentWeekStart(),
   thresholds: WorkloadThresholds = DEFAULT_WORKLOAD_THRESHOLDS
 ): WeeklyCapacity {
   const person = store.personById(personId);
   const weekEnd = addDays(weekStart, 6);
-  const hours = computeLoadHours(personId, store, weekStart, weekEnd);
+  const from = weekStart > today() ? weekStart : today();
+  const inWindow = from <= weekEnd;
+  const hours = inWindow ? computeLoadHours(personId, store, from, weekEnd) : 0;
   if (!person || person.weekly_capacity_hours == null) {
-    return { hours, capacityHours: DEFAULT_WEEKLY_CAPACITY_HOURS, pct: null, band: "unknown" };
+    return { hours, capacityHours: DEFAULT_WEEKLY_CAPACITY_HOURS, pct: null, band: "unknown", offDays: 0, from, weekEnd };
   }
-  const offDays = dayOffDaysInWindow(personId, weekStart, weekEnd, store.data.dayOff);
-  const effectiveCapacity = Math.max(1, person.weekly_capacity_hours - offDays * HOURS_PER_DAY);
-  const pct = round(clamp((hours / effectiveCapacity) * 100, 0, 999));
-  return { hours, capacityHours: Math.round(effectiveCapacity * 10) / 10, pct, band: bandFor(pct, thresholds) };
+  const offDays = inWindow ? dayOffDaysInWindow(personId, from, weekEnd, store.data.dayOff) : 0;
+  const workDays = inWindow ? Math.max(0, weekdaysBetween(from, weekEnd) - offDays) : 0;
+  const capacityHours = (workDays * person.weekly_capacity_hours) / WORK_DAYS_PER_WEEK;
+  const pct = capacityHours > 0 ? round(clamp((hours / capacityHours) * 100, 0, 999)) : hours > 0 ? 999 : 0;
+  return { hours, capacityHours: Math.round(capacityHours * 10) / 10, pct, band: bandFor(pct, thresholds), offDays, from, weekEnd };
 }
 
 export type Capacity = {
@@ -212,10 +276,12 @@ export type Capacity = {
 };
 
 /**
- * A person's overall status for the current week -- the headline "how
- * loaded are they" figure used for banding (Available/Balanced/.../
- * Overloaded) across the app. See computeDailyCapacity/computeWeeklyCapacity
- * for the literal "X/Y hours" figures shown on Team.
+ * A person's overall status for the current week -- the headline "how loaded
+ * are they" figure used everywhere (Team, Home, Projects matrix, Planning).
+ * The label is ALWAYS bandFor(pct): the same % the user sees, against the
+ * Settings thresholds. Overdue/blocked work is reported separately via
+ * overdueCount/blockedCount (render with CapWarningChip). It used to override
+ * the label, which produced "Overloaded" at 3% booked -- don't bring that back.
  */
 export function computeCapacity(
   personId: string,
@@ -223,132 +289,69 @@ export function computeCapacity(
   thresholds: WorkloadThresholds = DEFAULT_WORKLOAD_THRESHOLDS
 ): Capacity {
   const person = store.personById(personId);
-  const myTasksEarly = store.activeTasksForPerson(personId);
-  const awayNowEarly = isApprovedDayOff(personId, today(), store.data.dayOff);
-
-  if (!person) {
-    return {
-      personId,
-      load: 0,
-      pct: null,
-      status: "unknown",
-      band: "unknown",
-      needsAttention: false,
-      awayNow: false,
-      offDaysInWindow: 0,
-      reasons: [],
-      label: CAP_STATUS_LABEL.unknown,
-      activeTaskCount: 0,
-      projectCount: 0,
-      blockedCount: 0,
-      overdueCount: 0,
-      upcomingDeadlines: 0,
-      source: "not-provided",
-    };
-  }
-
-  if (person.weekly_capacity_hours == null) {
-    const myProjectsEarly = store
-      .projectsForPerson(personId)
-      .filter((pj) => require_stageDone(pj, store) !== "done");
-    return {
-      personId,
-      load: 0,
-      pct: null,
-      status: "unknown",
-      band: "unknown",
-      needsAttention: false,
-      awayNow: awayNowEarly,
-      offDaysInWindow: 0,
-      reasons: [],
-      label: CAP_STATUS_LABEL.unknown,
-      activeTaskCount: myTasksEarly.length,
-      projectCount: myProjectsEarly.length,
-      blockedCount: myTasksEarly.filter((tk) => tk.status === "blocked").length,
-      overdueCount: myTasksEarly.filter((tk) => dayDiff(today(), fromISO(tk.due_date)) < 0).length,
-      upcomingDeadlines: myTasksEarly.filter((tk) => {
-        const d = dayDiff(today(), fromISO(tk.due_date));
-        return d >= 0 && d <= NEAR_WINDOW_DAYS;
-      }).length,
-      source: "not-provided",
-    };
-  }
-
-  const weekStart = startOfWeek(today());
-  const weekEnd = addDays(weekStart, 6);
-  const load = computeLoadHours(personId, store, weekStart, weekEnd);
-  const offDays = dayOffDaysInWindow(personId, weekStart, weekEnd, store.data.dayOff);
-  const effectiveBaseline = Math.max(1, person.weekly_capacity_hours - offDays * HOURS_PER_DAY);
-  const pct = round(clamp((load / effectiveBaseline) * 100, 0, 999));
-  const myTasks = store.activeTasksForPerson(personId);
+  const myTasks = person ? store.activeTasksForPerson(personId) : [];
   const blocked = myTasks.filter((tk) => tk.status === "blocked");
-  const overdue = myTasks.filter((tk) => dayDiff(today(), fromISO(tk.due_date)) < 0);
+  const overdue = myTasks.filter((tk) => tk.due_date && dayDiff(today(), fromISO(tk.due_date)) < 0);
+  const daysToDue = (tk: Task) => (tk.due_date ? dayDiff(today(), fromISO(tk.due_date)) : null);
   const urgentCount = myTasks.filter((tk) => {
-    const d = dayDiff(today(), fromISO(tk.due_date));
-    return tk.priority === "high" && d <= URGENT_WINDOW_DAYS && d >= -3;
+    const d = daysToDue(tk);
+    return d != null && tk.priority === "high" && d <= URGENT_WINDOW_DAYS && d >= -3;
   }).length;
-  const myProjects = store.projectsForPerson(personId).filter((pj) => require_stageDone(pj, store) !== "done");
-  const awayNow = isApprovedDayOff(personId, today(), store.data.dayOff);
-
-  const flags = {
-    blocked: blocked.length > 0,
-    overdue: overdue.length > 0,
-    overCapacity: pct >= 100,
-    tooManyTasks: myTasks.length >= 7,
-    tooManyProjects: myProjects.length >= 5,
-    urgent: urgentCount >= 2,
-  };
-
-  let status: CapacityBand;
-  if (flags.blocked || flags.overdue) {
-    status =
-      pct > thresholds.overloaded || (flags.blocked && flags.overdue) || myTasks.length >= 9
-        ? "overloaded"
-        : "needs-support";
-  } else if (pct > thresholds.overloaded) {
-    status = "overloaded";
-  } else if (pct >= thresholds.needsSupport) {
-    status = "needs-support";
-  } else if (pct >= thresholds.almostFull) {
-    status = "almost-full";
-  } else if (pct >= thresholds.balanced) {
-    status = "balanced";
-  } else {
-    status = "available";
-  }
-
-  const needsAttention = status === "needs-support" || status === "overloaded";
-  const reasons: { label: string; tag: string }[] = [];
-  if (needsAttention) {
-    if (flags.blocked) reasons.push({ label: `${blocked.length} blocked task${blocked.length === 1 ? "" : "s"}`, tag: "blocked" });
-    if (flags.overdue) reasons.push({ label: `${overdue.length} overdue task${overdue.length === 1 ? "" : "s"}`, tag: "overdue" });
-    if (flags.overCapacity) reasons.push({ label: `Over capacity (${pct}%)`, tag: "over-capacity" });
-    if (flags.tooManyTasks) reasons.push({ label: `${myTasks.length} active tasks at once`, tag: "load" });
-    if (flags.tooManyProjects) reasons.push({ label: `${myProjects.length} active projects`, tag: "projects" });
-    if (flags.urgent) reasons.push({ label: `${urgentCount} urgent deadlines`, tag: "urgent" });
-    if (offDays > 0) reasons.push({ label: `${offDays} day${offDays === 1 ? "" : "s"} off this week`, tag: "day-off" });
-    if (!reasons.length) reasons.push({ label: "Below full availability", tag: "low-availability" });
-  }
-
-  return {
+  const myProjects = person ? store.projectsForPerson(personId).filter((pj) => require_stageDone(pj, store) !== "done") : [];
+  const counts = {
     personId,
-    load,
-    pct,
-    status,
-    band: status,
-    needsAttention,
-    awayNow,
-    offDaysInWindow: offDays,
-    reasons: reasons.slice(0, 3),
-    label: CAP_STATUS_LABEL[status] ?? status,
+    awayNow: isApprovedDayOff(personId, today(), store.data.dayOff),
     activeTaskCount: myTasks.length,
     projectCount: myProjects.length,
     blockedCount: blocked.length,
     overdueCount: overdue.length,
     upcomingDeadlines: myTasks.filter((tk) => {
-      const d = dayDiff(today(), fromISO(tk.due_date));
-      return d >= 0 && d <= NEAR_WINDOW_DAYS;
+      const d = daysToDue(tk);
+      return d != null && d >= 0 && d <= NEAR_WINDOW_DAYS;
     }).length,
+  };
+
+  if (!person || person.weekly_capacity_hours == null) {
+    return {
+      ...counts,
+      load: 0,
+      pct: null,
+      status: "unknown",
+      band: "unknown",
+      needsAttention: false,
+      offDaysInWindow: 0,
+      reasons: [],
+      label: CAP_STATUS_LABEL.unknown,
+      source: "not-provided",
+    };
+  }
+
+  const weekly = computeWeeklyCapacity(personId, store, undefined, thresholds);
+  const pct = weekly.pct ?? 0;
+  const status = bandFor(pct, thresholds);
+  const needsAttention = status === "needs-support" || status === "overloaded";
+
+  // Context for a high %, never a different label. Overdue/blocked are left
+  // out on purpose -- they're the separate warning chip.
+  const reasons: { label: string; tag: string }[] = [];
+  if (needsAttention) {
+    reasons.push({ label: pct >= 100 ? `Over capacity (${pct}%)` : `Near full capacity (${pct}%)`, tag: "over-capacity" });
+    if (myTasks.length >= 7) reasons.push({ label: `${myTasks.length} active tasks at once`, tag: "load" });
+    if (myProjects.length >= 5) reasons.push({ label: `${myProjects.length} active projects`, tag: "projects" });
+    if (urgentCount >= 2) reasons.push({ label: `${urgentCount} urgent deadlines`, tag: "urgent" });
+    if (weekly.offDays > 0) reasons.push({ label: `${weekly.offDays} day${weekly.offDays === 1 ? "" : "s"} off this week`, tag: "day-off" });
+  }
+
+  return {
+    ...counts,
+    load: weekly.hours,
+    pct,
+    status,
+    band: status,
+    needsAttention,
+    offDaysInWindow: weekly.offDays,
+    reasons: reasons.slice(0, 3),
+    label: CAP_STATUS_LABEL[status] ?? status,
     source: "calculated",
   };
 }

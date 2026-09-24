@@ -1,14 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CAP_STATUS_LABEL, computeCapacity, computeDailyCapacity, computeWeeklyCapacity } from "@/lib/domain/capacity";
-import { addDays, clamp, fmt, fromISO, round, today } from "@/lib/domain/dates";
+import { CAP_STATUS_LABEL, computeCapacity, computeDailyCapacity, computeLoadByProject, computeWeeklyCapacity, hoursOfLabel } from "@/lib/domain/capacity";
+import { addDays, clamp, fmt, fromISO, today } from "@/lib/domain/dates";
 import { computeStage } from "@/lib/domain/stage";
 import { createStore, type PortalData } from "@/lib/domain/store";
-import { Avatar, Card, CapacityBar, CapStatusPill, KpiCard } from "@/components/ui/primitives";
+import { Avatar, Card, CapacityBar, CapStatusPill, CapWarningChip, KpiCard } from "@/components/ui/primitives";
 import type { CapacityBand, WorkloadThresholds } from "@/lib/types";
 
-function mainActiveProjectFor(personId: string, store: ReturnType<typeof createStore>) {
+/** Fallback for "Main project" when someone has no in-progress work: the soonest-ending active project they're on. */
+function nextDeadlineProjectFor(personId: string, store: ReturnType<typeof createStore>) {
   const active = store
     .projectsForPerson(personId)
     .filter((p) => computeStage(p, store.tasksFor(p.id)) !== "done")
@@ -20,23 +21,31 @@ const ABSENCE_LOOKAHEAD_DAYS = 14;
 
 const DISTRIBUTION_PALETTE = ["var(--diem-blue)", "var(--diem-teal)", "var(--diem-yellow)", "var(--diem-purple)", "var(--diem-orange)"];
 
-// Live, not static: only counts tasks actually in progress right now, and
-// weights each project by real hours (not a plain task count), matching
-// the same "in-progress only" rule computeLoadHours uses for capacity.
-function workloadDistribution(personId: string, store: ReturnType<typeof createStore>, projectColor: Map<string, string>) {
-  const tasks = store.activeTasksForPerson(personId).filter((tk) => tk.status === "in-progress");
-  if (!tasks.length) return [];
-  const hoursByProject = new Map<string, number>();
-  tasks.forEach((tk) => hoursByProject.set(tk.project_id, (hoursByProject.get(tk.project_id) ?? 0) + tk.workload_hours));
-  const total = tasks.reduce((s, tk) => s + tk.workload_hours, 0) || 1;
-  return [...hoursByProject.entries()]
+// How full someone is, split by project: the bar's full width is their
+// capacity for the rest of this week, and each segment is that project's
+// in-progress hours in the same window -- the exact numbers behind the
+// capacity % (computeWeeklyCapacity / computeLoadByProject), so bar length
+// and % always agree. 2h of 40h fills 5% of the bar, not all of it.
+function workloadDistribution(
+  personId: string,
+  store: ReturnType<typeof createStore>,
+  projectColor: Map<string, string>,
+  thresholds: WorkloadThresholds
+) {
+  const weekly = computeWeeklyCapacity(personId, store, undefined, thresholds);
+  const byProject = computeLoadByProject(personId, store, weekly.from, weekly.weekEnd);
+  const segments = [...byProject.entries()]
     .map(([projectId, hours]) => ({
       projectId,
       project: store.projectById(projectId),
-      pct: round((hours / total) * 100),
+      hours: Math.round(hours * 10) / 10,
       color: projectColor.get(projectId) ?? "var(--ink-faint)",
     }))
-    .sort((a, b) => b.pct - a.pct);
+    .filter((s) => s.hours > 0)
+    .sort((a, b) => b.hours - a.hours);
+  // Over capacity: the bar is full and each segment keeps its share.
+  const scale = Math.max(weekly.capacityHours, weekly.hours) || 1;
+  return { segments, weekly, scale };
 }
 
 export function TeamClient({
@@ -84,7 +93,11 @@ export function TeamClient({
   const absencesInWindow = data.dayOff.filter(
     (d) => d.status === "approved" && fromISO(d.end_date) >= windowStart && fromISO(d.start_date) <= windowEnd
   );
-  const canHelp = allRows.filter((r) => ["available", "balanced"].includes(r.cap.band));
+  // Spare capacity by the same % as the label; not on leave today; most available first.
+  // Overdue/blocked work doesn't exclude anyone -- it shows as a warning chip instead.
+  const canHelp = allRows
+    .filter((r) => ["available", "balanced"].includes(r.cap.band) && !r.cap.awayNow)
+    .sort((a, b) => (a.cap.pct ?? 0) - (b.cap.pct ?? 0));
 
   const heatmapRows = rows.map((r) => ({
     person: r.person,
@@ -95,12 +108,13 @@ export function TeamClient({
   const projectColor = new Map<string, string>();
   data.projects.forEach((p, i) => projectColor.set(p.id, DISTRIBUTION_PALETTE[i % DISTRIBUTION_PALETTE.length]));
 
+  const distByPerson = new Map(rows.map((r) => [r.person.id, workloadDistribution(r.person.id, store, projectColor, thresholds)]));
   const distributionByPerson = rows
     .filter((r) => r.person.role_type !== "ceo")
-    .map((r) => ({ person: r.person, dist: workloadDistribution(r.person.id, store, projectColor) }));
+    .map((r) => ({ person: r.person, dist: distByPerson.get(r.person.id)! }));
   const legendProjects = new Map<string, string>();
   distributionByPerson.forEach(({ dist }) =>
-    dist.forEach((d) => {
+    dist.segments.forEach((d) => {
       if (d.project) legendProjects.set(d.project.id, d.project.name);
     })
   );
@@ -120,7 +134,7 @@ export function TeamClient({
           <h2>Capacity heat map</h2>
         </div>
         <div className="field-hint" style={{ marginBottom: 12 }}>
-          Hours booked today vs. this week, out of each person&apos;s real capacity — spot who&apos;s about to get overloaded before it happens.
+          In-progress hours booked today and for the rest of this week, out of each person&apos;s capacity for that time — spot who&apos;s about to get overloaded before it happens.
         </div>
         <div className="heatmap-grid">
           <div className="heatmap-head">Team member</div>
@@ -133,10 +147,10 @@ export function TeamClient({
                 <span className="mp-name">{r.person.name}</span>
               </div>
               <div className={`heatmap-cell ${r.daily.band}`}>
-                {r.daily.pct != null ? `${r.daily.hours}/${r.daily.capacityHours}h` : "—"}
+                {r.daily.pct != null ? hoursOfLabel(r.daily.hours, r.daily.capacityHours, "today") : "—"}
               </div>
               <div className={`heatmap-cell ${r.weekly.band}`}>
-                {r.weekly.pct != null ? `${r.weekly.hours}/${r.weekly.capacityHours}h` : "—"}
+                {r.weekly.pct != null ? hoursOfLabel(r.weekly.hours, r.weekly.capacityHours, "week") : "—"}
               </div>
             </div>
           ))}
@@ -171,7 +185,10 @@ export function TeamClient({
           {rows.length ? (
             <div className="team-simple-grid">
               {rows.map((r) => {
-                const mainProj = mainActiveProjectFor(r.person.id, store);
+                // Main project = where most of their in-progress hours are this week (the biggest
+                // segment of their workload bar). No in-progress work → say "Next deadline" instead.
+                const topSegment = distByPerson.get(r.person.id)?.segments[0];
+                const nextDeadline = topSegment ? null : nextDeadlineProjectFor(r.person.id, store);
                 return (
                   <div className="team-card" key={r.person.id}>
                     <div className="tc-top">
@@ -182,8 +199,11 @@ export function TeamClient({
                       </div>
                     </div>
                     <div className="tc-row">
-                      <CapStatusPill band={r.cap.band} />
-                      <span className="tc-avail">
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap", minWidth: 0 }}>
+                        <CapStatusPill band={r.cap.band} />
+                        <CapWarningChip overdue={r.cap.overdueCount} blocked={r.cap.blockedCount} />
+                      </span>
+                      <span className="tc-avail" style={{ flexShrink: 0 }}>
                         {r.cap.pct == null ? "" : `${Math.max(0, 100 - r.cap.pct)}% available${r.cap.source === "reported" ? " · reported" : ""}`}
                       </span>
                     </div>
@@ -193,8 +213,14 @@ export function TeamClient({
                       </div>
                     )}
                     <div className="tc-main-proj">
-                      <span className="tc-lbl">Main project</span>
-                      <span className="tc-val">{mainProj ? mainProj.name : "No active project"}</span>
+                      <span className="tc-lbl">{topSegment || !nextDeadline ? "Main project" : "Next deadline"}</span>
+                      <span className="tc-val">
+                        {topSegment
+                          ? topSegment.project?.name ?? "Unknown project"
+                          : nextDeadline
+                            ? `${nextDeadline.name}${nextDeadline.end_date ? ` · ${fmt(fromISO(nextDeadline.end_date))}` : ""}`
+                            : "No active project"}
+                      </span>
                     </div>
                     {isAdmin && r.person.next_assessment_date && (
                       <div className="tc-main-proj" style={{ marginTop: 8, paddingTop: 8 }}>
@@ -215,7 +241,7 @@ export function TeamClient({
             <div className="panel-head-row">
               <h2>Workload distribution</h2>
             </div>
-            <div className="field-hint" style={{ marginBottom: 10 }}>Hours currently in progress for each person, by project — live, updates as work happens.</div>
+            <div className="field-hint" style={{ marginBottom: 10 }}>In-progress hours for the rest of this week, by project. A full bar means fully booked.</div>
             {legendProjects.size > 0 && (
               <div className="people-chip-row" style={{ marginBottom: 14 }}>
                 {Array.from(legendProjects.entries()).map(([id, name]) => (
@@ -227,26 +253,29 @@ export function TeamClient({
               </div>
             )}
             <div className="stack-gap" style={{ gap: 12 }}>
-              {distributionByPerson.map(({ person, dist }) => (
-                <div key={person.id}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-                    <Avatar person={person} size="sm" />
-                    <span style={{ fontSize: 12, fontWeight: 700 }}>{person.name.split(" ")[0]}</span>
-                  </div>
-                  {dist.length ? (
+              {distributionByPerson.map(({ person, dist }) => {
+                const known = dist.weekly.pct != null;
+                const over = known && (dist.weekly.pct ?? 0) > 100;
+                return (
+                  <div key={person.id}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                      <Avatar person={person} size="sm" />
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>{person.name.split(" ")[0]}</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: over ? "var(--cap-overloaded-fg)" : "var(--ink-soft)" }}>
+                        {known ? `${hoursOfLabel(dist.weekly.hours, dist.weekly.capacityHours, "week")}${over ? ` · ${dist.weekly.pct}%` : ""}` : "No capacity set"}
+                      </span>
+                    </div>
                     <div
-                      className="dist-bar"
-                      title={dist.map((d) => `${d.project?.name ?? "—"}: ${d.pct}%`).join(" · ")}
+                      className={`dist-bar${dist.segments.length ? "" : " dist-bar-empty"}`}
+                      title={dist.segments.map((d) => `${d.project?.name ?? "—"}: ${d.hours}h`).join(" · ")}
                     >
-                      {dist.map((d) => (
-                        <div key={d.projectId} style={{ width: `${d.pct}%`, background: d.color }} />
+                      {dist.segments.map((d) => (
+                        <div key={d.projectId} style={{ width: `${(d.hours / dist.scale) * 100}%`, background: d.color }} />
                       ))}
                     </div>
-                  ) : (
-                    <div className="dist-bar dist-bar-empty" />
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </Card>
           <Card>
@@ -259,6 +288,8 @@ export function TeamClient({
                   <span className="people-chip" key={r.person.id}>
                     <Avatar person={r.person} size="sm" />
                     {r.person.name.split(" ")[0]}
+                    <span style={{ color: "var(--ink-soft)", fontWeight: 500 }}>· {Math.max(0, 100 - (r.cap.pct ?? 0))}% available</span>
+                    <CapWarningChip overdue={r.cap.overdueCount} blocked={r.cap.blockedCount} />
                   </span>
                 ))}
               </div>

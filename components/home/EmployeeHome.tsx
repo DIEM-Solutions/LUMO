@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { computeCapacity, computeDailyCapacity, computeWeeklyCapacity } from "@/lib/domain/capacity";
+import { computeCapacity, computeDailyCapacity, computeWeeklyCapacity, hoursOfLabel } from "@/lib/domain/capacity";
 import { clamp, dayDiff, fromISO, today } from "@/lib/domain/dates";
 import { computeHealth } from "@/lib/domain/health";
 import { projectProgress } from "@/lib/domain/progress";
 import { computeStage } from "@/lib/domain/stage";
 import type { Store } from "@/lib/domain/store";
-import { Card, CapacityBar, HealthFlag, KpiCard, RunwayBar, TypeTag } from "@/components/ui/primitives";
+import { Card, CapacityBar, CapWarningChip, HealthFlag, KpiCard, RunwayBar, TypeTag } from "@/components/ui/primitives";
 import { ActivityFeedList } from "@/components/activity/ActivityFeedList";
 import type { ActivityLogEntry, Project, Task, WorkloadThresholds } from "@/lib/types";
 
@@ -177,9 +177,15 @@ export function EmployeeHome({
               <h2>My capacity</h2>
             </div>
             <div className="cap-bar-lbl">
-              Today: <b>{daily.pct != null ? `${daily.hours}/${daily.capacityHours} hours` : "—"}</b>
-              {" · "}
-              This week: <b>{weekly.pct != null ? `${weekly.hours}/${weekly.capacityHours} hours` : "—"}</b>
+              {daily.pct != null && weekly.pct != null ? (
+                <>
+                  <b>{hoursOfLabel(daily.hours, daily.capacityHours, "today")}</b>
+                  {" · "}
+                  <b>{hoursOfLabel(weekly.hours, weekly.capacityHours, "week")}</b>
+                </>
+              ) : (
+                "No weekly capacity set"
+              )}
             </div>
             {cap.pct != null && (
               <div className="capacity-bar-wrap" style={{ marginBottom: 8 }}>
@@ -187,7 +193,10 @@ export function EmployeeHome({
               </div>
             )}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span className={`cap-status-pill ${cap.band}`}>{cap.label}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span className={`cap-status-pill ${cap.band}`}>{cap.label}</span>
+                <CapWarningChip overdue={cap.overdueCount} blocked={cap.blockedCount} />
+              </span>
               <span style={{ fontSize: 11.5, color: "var(--ink-soft)" }}>
                 {cap.activeTaskCount} active tasks · {cap.projectCount} projects
               </span>

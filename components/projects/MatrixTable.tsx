@@ -2,7 +2,7 @@ import Link from "next/link";
 import { computeCapacity } from "@/lib/domain/capacity";
 import { round } from "@/lib/domain/dates";
 import type { Store } from "@/lib/domain/store";
-import { Avatar } from "@/components/ui/primitives";
+import { Avatar, CapWarningChip } from "@/components/ui/primitives";
 import type { Project, WorkloadThresholds } from "@/lib/types";
 
 function clientInternalSplit(personId: string, store: Store) {
@@ -58,13 +58,14 @@ export function MatrixTable({
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div className="mp-name">{person.name}</div>
                       <div className="mp-role">{person.role}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
                         <span className={`cap-status-pill ${cap.band}`}>{cap.label}</span>
                         {cap.pct != null && (
                           <span className="mono" style={{ fontSize: 11, color: "var(--ink-faint)" }}>
                             {cap.pct}%{cap.source === "reported" ? "*" : ""}
                           </span>
                         )}
+                        <CapWarningChip overdue={cap.overdueCount} blocked={cap.blockedCount} />
                       </div>
                       {split && (
                         <div

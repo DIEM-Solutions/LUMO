@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { computeWeeklyCapacity, dayOffOverlapsDate, startOfWeek, taskWorkingDays } from "@/lib/domain/capacity";
+import { computeWeeklyCapacity, dayOffOverlapsDate, isPastWeek, startOfWeek, taskWorkingDays } from "@/lib/domain/capacity";
 import { addDays, dayDiff, DOW_SHORT, fmt, fmtLong, fromISO, MONTH_NAMES, toISO, today } from "@/lib/domain/dates";
 import { bySeniorityDesc } from "@/lib/domain/hierarchy";
 import { createStore, type PortalData } from "@/lib/domain/store";
@@ -243,7 +243,9 @@ export function CalendarView({
                 )}
 
                 {weekPeople.map((person) => {
-                  const cap = computeWeeklyCapacity(person.id, store, weekStart, thresholds);
+                  const weekly = computeWeeklyCapacity(person.id, store, weekStart, thresholds);
+                  // A past week has nothing left to measure -- show no capacity figure rather than a misleading "Available".
+                  const cap = isPastWeek(weekly) ? { ...weekly, pct: null } : weekly;
                   return (
                     <div key={person.id} style={{ display: "contents" }}>
                       <div className="plan-name-cell" style={{ alignItems: "flex-start", flexDirection: "column", gap: 6, paddingTop: 10, paddingBottom: 10 }}>

@@ -52,7 +52,8 @@ export function ExecutiveHome({
   const capSegments = [
     { label: "Available", value: capRows.filter((r) => ["available", "balanced"].includes(r.cap.status)).length, color: "var(--health-ontrack)", names: peopleByBands(["available", "balanced"]) },
     { label: "Near capacity", value: capRows.filter((r) => r.cap.status === "almost-full").length, color: "var(--health-atrisk)", names: peopleByBands(["almost-full"]) },
-    { label: "Overloaded", value: capRows.filter((r) => ["needs-support", "overloaded"].includes(r.cap.status)).length, color: "var(--health-blocked)", names: peopleByBands(["needs-support", "overloaded"]) },
+    { label: "Needs support", value: capRows.filter((r) => r.cap.status === "needs-support").length, color: "var(--cap-needs-support-fg)", names: peopleByBands(["needs-support"]) },
+    { label: "Overloaded", value: overloadedCount, color: "var(--health-blocked)", names: peopleByBands(["overloaded"]) },
   ];
   const upcomingDeadlines = [...store.data.projects]
     .filter((p) => computeStage(p, store.tasksFor(p.id)) !== "done" && p.end_date)
