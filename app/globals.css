@@ -510,6 +510,18 @@ main.content{padding:28px 36px 64px; max-width:1800px;}
 .pl-swatch.blocked{background:var(--stage-blocked-bg); box-shadow:inset 0 0 0 1px var(--health-blocked);}
 .pl-swatch.dayoff{background:repeating-linear-gradient(135deg, #F0EAF8, #F0EAF8 3px, #E4DAF2 3px, #E4DAF2 6px);}
 .pl-swatch.holiday{background:#E3F6F2; box-shadow:inset 0 0 0 1px var(--diem-teal);}
+/* Two-Week Planning only (PlanningBoard.tsx): person → one row per project, tasks on their due date.
+   Modifier classes on purpose — the Calendar tab shares the base .plan-* classes above and must not change. */
+.plan-corner.plan-corner-sticky{position:sticky; left:0; z-index:5;}
+.plan-head-cell.plan-project-head{position:sticky; left:210px; z-index:3; text-align:left; padding-left:12px;}
+.plan-head-cell.plan-overdue-head .dow{color:var(--diem-orange); font-weight:700;}
+.plan-name-cell.plan-person-span{align-items:flex-start;}
+.plan-project-cell{position:sticky; left:210px; z-index:3; background:var(--surface); padding:8px 10px; border-bottom:1px solid var(--border-soft); border-right:1px solid var(--border-soft); min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:5px;}
+.plan-project-cell .tag{max-width:100%; overflow:hidden; text-overflow:ellipsis;}
+.plan-project-empty{font-size:11px; color:var(--ink-faint);}
+.plan-day-cell.plan-row-cell{height:auto; min-height:46px;}
+.plan-day-cell.plan-overdue-cell{background:#FFF8F3;}
+.plan-person-end{border-bottom:2px solid var(--border) !important;}
 
 /* ================= CALENDAR ================= */
 .cal-month-grid{display:grid; grid-template-columns:repeat(7,1fr);}
